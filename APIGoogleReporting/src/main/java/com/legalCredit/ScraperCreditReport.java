@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 
+import javax.measure.quantity.Length;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.json.JSONArray;
@@ -52,6 +54,8 @@ import com.legalCredit.modelo.Reporte;
 import com.legalCredit.scraper.patrones.PatronEquifax;
 import com.legalCredit.scraper.patrones.PatronExperian;
 import com.legalCredit.scraper.patrones.PatronTransunion;
+import static com.legalCredit.componentes.Utilidades.getNumeroEntero;
+import static com.legalCredit.componentes.Utilidades.getNumeroReal;
 
 
 
@@ -244,7 +248,18 @@ public class ScraperCreditReport implements HttpFunction {
 		String myhardcreditinquiries = utilidades.getLineaAnterior(textoMinuscula,elementosReporte[17]);
 		String mypublicrecords = utilidades.getLineaAnterior(textoMinuscula,elementosReporte[18]);
 		String creditscore = getCreditScorePatronGenerico(textoMinuscula,elementosReporte[19]);
-		String dateofreport = utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[20]);
+		String dateofreport = utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[20]).trim();
+		
+		if (!dateofreport.isEmpty()) {
+			
+			String mes = utilidades.getNumeroMes(dateofreport.substring(0,3));
+			String año = dateofreport.substring(dateofreport.length() - 4);
+			String dia = dateofreport.replaceAll(mes, "").replaceAll(año, "").trim();
+			dateofreport = año+"."+mes+"."+dia;
+			
+		}
+		
+		
 		String[] address = getAddressPatronGenerico(textoMinuscula,patronEquifax.getTagAddress(),name);
 		String birthyear = utilidades.getDatoVertical(textoMinuscula,elementosReporte[21]);
 		String overallcreditusage = utilidades.getDatoVertical(textoMinuscula,elementosReporte[22]);
@@ -2813,10 +2828,6 @@ public class ScraperCreditReport implements HttpFunction {
 		return employer;
 	}
 
-
-
-
-
 	private String[] getAddressExperianPatronCinco(String textoMinuscula,String tag) {
 
 		int posicionInicial = textoMinuscula.lastIndexOf("name id");
@@ -2937,27 +2948,28 @@ public class ScraperCreditReport implements HttpFunction {
 		jsonReporte.put("previous_address",previous_address);
 		jsonReporte.put("last_reported_employment",last_reported_employment);
 		jsonReporte.put("previous_reported_employment",previous_reported_employment);
-		jsonReporte.put("open_credit_cards",reporte.getOpencreditcards());
-		jsonReporte.put("open_retail_cards",reporte.getOpenretailcards());
-		jsonReporte.put("open_real_state_loans",reporte.getOpenrealrstateloans());
-		jsonReporte.put("open_installment_loans",reporte.getOpeninstallmentloans());
-		jsonReporte.put("total_open_accounts",reporte.getTotalopenaccounts());
-		jsonReporte.put("account_sever_late",reporte.getAccountseverlate());
-		jsonReporte.put("collections_accounts",reporte.getCollectionsaccounts());
-		jsonReporte.put("average_account_age",reporte.getAverageaccountage());
+		jsonReporte.put("open_credit_cards",getNumeroEntero(reporte.getOpencreditcards()));
+		jsonReporte.put("open_retail_cards",getNumeroEntero(reporte.getOpenretailcards()));
+		jsonReporte.put("open_real_state_loans",getNumeroEntero(reporte.getOpenrealrstateloans()));
+		jsonReporte.put("open_installment_loans",getNumeroEntero(reporte.getOpeninstallmentloans()));
+		jsonReporte.put("total_open_accounts",getNumeroEntero(reporte.getTotalopenaccounts()));
+		jsonReporte.put("account_sever_late",getNumeroEntero(reporte.getAccountseverlate()));
+		jsonReporte.put("collections_accounts",getNumeroEntero(reporte.getCollectionsaccounts()));
+		jsonReporte.put("average_account_age",getNumeroReal(reporte.getAverageaccountage()));
 		jsonReporte.put("oldest_account",reporte.getOldestaccount());
 		jsonReporte.put("newest_account",reporte.getNewestaccount());
-		jsonReporte.put("my_hard_credit_inquiries",reporte.getMyhardcreditinquiries());
+		jsonReporte.put("my_hard_credit_inquiries",getNumeroEntero(reporte.getMyhardcreditinquiries()));
 		jsonReporte.put("overall_credit_usage",reporte.getOverallcreditusage());
-		jsonReporte.put("credit_debt",reporte.getCreditdebt());
-		jsonReporte.put("total_credit",reporte.getTotalcredit());
-		jsonReporte.put("credit_and_retail_card_debt",reporte.getCreditandretailcarddebt());
-		jsonReporte.put("real_estate_debt",reporte.getRealestatedebt());
-		jsonReporte.put("installment_loans_debt",reporte.getInstallmentloansdebt());
-		jsonReporte.put("collections_debt",reporte.getCollectionsdebt());
-		jsonReporte.put("total_debt",reporte.getTotaldebt());
-		jsonReporte.put("my_public_records",reporte.getMypublicrecords());
-		jsonReporte.put("credit_score",reporte.getCreditscore());
+		jsonReporte.put("credit_debt",getNumeroReal(reporte.getCreditdebt()));
+		jsonReporte.put("total_credit",getNumeroReal(reporte.getTotalcredit()));
+		jsonReporte.put("credit_and_retail_card_debt",getNumeroReal(reporte.getCreditandretailcarddebt()));
+		jsonReporte.put("real_estate_debt",getNumeroReal(reporte.getRealestatedebt()));
+		jsonReporte.put("installment_loans_debt",getNumeroReal(reporte.getInstallmentloansdebt()));
+		jsonReporte.put("collections_debt",getNumeroReal(reporte.getCollectionsdebt()));
+		jsonReporte.put("total_debt",getNumeroReal(reporte.getTotaldebt()));
+		jsonReporte.put("my_public_records",getNumeroEntero(reporte.getMypublicrecords()));
+		jsonReporte.put("credit_score",getNumeroReal(reporte.getCreditscore()));
+		
 		jsonReporte.put("name", reporte.getName());
 		jsonReporte.put("pattern",reporte.getPatron());
 
@@ -3010,12 +3022,12 @@ public class ScraperCreditReport implements HttpFunction {
 			jsonCuentaReporte.put("account_status",cuentaReporte.getAccountStatus());
 			jsonCuentaReporte.put("status_update",cuentaReporte.getStatusUpdated());
 			jsonCuentaReporte.put("status_detail",cuentaReporte.getStatusDetail());
-			jsonCuentaReporte.put("balance",cuentaReporte.getBalance());
+			jsonCuentaReporte.put("balance",getNumeroReal(cuentaReporte.getBalance()));
 			jsonCuentaReporte.put("balance_update",cuentaReporte.getBalanceUpdated());
-			jsonCuentaReporte.put("limit",cuentaReporte.getLimit());
-			jsonCuentaReporte.put("monthly_payment",cuentaReporte.getMonthlyPayment());
-			jsonCuentaReporte.put("past_due_amount",cuentaReporte.getPastDueAmount());
-			jsonCuentaReporte.put("highest_balance",cuentaReporte.getHighestBalance());
+			jsonCuentaReporte.put("limit",getNumeroReal(cuentaReporte.getLimit()));
+			jsonCuentaReporte.put("monthly_payment",getNumeroReal(cuentaReporte.getMonthlyPayment()));
+			jsonCuentaReporte.put("past_due_amount",getNumeroReal(cuentaReporte.getPastDueAmount()));
+			jsonCuentaReporte.put("highest_balance",getNumeroReal(cuentaReporte.getHighestBalance()));
 			jsonCuentaReporte.put("terms",cuentaReporte.getTerms());
 			jsonCuentaReporte.put("responsibility",cuentaReporte.getResponsibility());
 			jsonCuentaReporte.put("your_statement",cuentaReporte.getYourStatement());
@@ -3023,7 +3035,7 @@ public class ScraperCreditReport implements HttpFunction {
 			jsonCuentaReporte.put("date_opened",cuentaReporte.getDateOpened());
 			jsonCuentaReporte.put("date_closed",cuentaReporte.getDateClosed());
 			jsonCuentaReporte.put("loan_type",cuentaReporte.getLoanType());
-			jsonCuentaReporte.put("payment_received",cuentaReporte.getPaymentReceived());
+			jsonCuentaReporte.put("payment_received",getNumeroReal(cuentaReporte.getPaymentReceived()));
 			jsonCuentaReporte.put("payment_status",cuentaReporte.getPaymentStatus());
 			jsonCuentaReporte.put("last_activity",cuentaReporte.getLastActivity());
 			jsonCuentaReporte.put("original_creditor",cuentaReporte.getOriginalCreditor());

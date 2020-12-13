@@ -15,6 +15,7 @@ package com.legalCredit.componentes;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import java.awt.Rectangle;
@@ -34,6 +35,8 @@ import org.apache.pdfbox.text.PDFTextStripperByArea;
 public class Utilidades {
 
 	private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
+	private static Pattern patronNumeroEntero;
+	private static Pattern patronNumeroReal;
 	private String[] meses = {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"};
 
 
@@ -304,7 +307,7 @@ public class Utilidades {
 
 		return numeroMes < 10 ? "0"+numeroMes : ""+numeroMes;
 	}
-	
+
 
 	/**
 	 * Obtiene las lineas de un texto
@@ -334,137 +337,172 @@ public class Utilidades {
 	}
 
 	public Pattern getPatronAno() {
-		
+
 		String regexAno ="\\d{4}";
 		Pattern patronAno = Pattern.compile(regexAno);
 		return patronAno;
-		
+
 	}
 
 	public Pattern getPatronSSNReporte() {
-		
+
 		String regexSSNReporte = "(\\d|x){3}-(\\d|x){2}-(\\d|x){4}";
-		
+
 		Pattern patronSSNReporte = Pattern.compile(regexSSNReporte,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronSSNReporte;
 	}
 
 	public Pattern getPatronMes() {
-		
+
 		String regexMes ="jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec";
-		
+
 		Pattern patronMes = Pattern.compile(regexMes,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronMes;
 	}
 
 	public Pattern getPatronDateReportPatronTres() {
-		
+
 		String regexDateReportPatronTres = "[a-zA-z]{3}\\s+\\d{2},\\s+\\d{4}";
-		
+
 		Pattern patronDateReportPatronTres = Pattern.compile(regexDateReportPatronTres,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronDateReportPatronTres;
 	}
 
 	public Pattern getPatronItemNumeral() {
-		
+
 		String regexItemNumeral ="\\d{1}[.]{1}\\d{1,2}";
-		
+
 		Pattern patronItemNumeral = Pattern.compile(regexItemNumeral);
-		
+
 		return patronItemNumeral;
 	}
 
 	public Pattern getPatronContenidoParentesis() {
-		
+
 		String regexContenidoParentesis = "\\([a-zA-z]+\\)";
-		
+
 		Pattern patronContenidoParentesis = Pattern.compile(regexContenidoParentesis);
-		
+
 		return patronContenidoParentesis;
 	}
 
 	public Pattern getPatronFormatoTablaPatronDos() {
-		
+
 		String regexFormatoTablaPatronDos = "\\s*year\\s+jan\\s+feb\\s+mar\\s+apr\\s+may\\s+jun\\s+jul\\s+aug\\s+sep\\s+oct\\s+nov\\s+dec";
-		
+
 		Pattern patronFormatoTablaPatronDos = Pattern.compile(regexFormatoTablaPatronDos,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronFormatoTablaPatronDos;
 	}
 
 	public Pattern getPatronValorTabla() {
-		
+
 		String regexValorTabla ="\\${0,1}\\d+,*\\d+";
-		
+
 		Pattern patronValorTabla = Pattern.compile(regexValorTabla);
-		
+
 		return patronValorTabla;
 	}
 
 	public Pattern getPatronDateInquiresPatrosDos() {
-		
+
 		String regexDateInquiresPatrosDos = "[a-z]{3}\\s+\\d{1,2}\\s*,\\s*\\d{4}";
-		
+
 		Pattern patronDateInquiresPatrosDos = Pattern.compile(regexDateInquiresPatrosDos);
-		
+
 		return patronDateInquiresPatrosDos;
 	}
 
 	public Pattern getPatronNumeroCuentaReporteExperian() {
-		
+
 		String regexNumeroCuentaReporteExperian = "#{0,1}(\\d)+(\\*)+|(\\d){3,}[.]{3,}";
-		
+
 		Pattern patronNumeroCuentaReporteExperian = Pattern.compile(regexNumeroCuentaReporteExperian,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronNumeroCuentaReporteExperian;
 	}
 
 	public Pattern getPatronHardInquiries() {
-		
+
 		String regexHardInquiries = "hard\\s+inquiries";
-		
+
 		Pattern patronHardInquiries = Pattern.compile(regexHardInquiries,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronHardInquiries;
 	}
 
 	public Pattern getPatronSoftInquiries() {
-		
+
 		String regexSoftInquiries = "soft\\s+inquiries";
-		
+
 		Pattern patronSoftInquiries = Pattern.compile(regexSoftInquiries,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronSoftInquiries;
 	}
 
 	public Pattern getPatronDateInquiresOn() {
-		
+
 		String regexDateInquiresOn ="\\d{1,2}/\\d{1,2}/\\d{2,4}";
-		
+
 		Pattern patronDateInquiresOn = Pattern.compile(regexDateInquiresOn,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronDateInquiresOn;
 	}
 
 	public Pattern getPatronNumeroCuentaReporte() {
-		
+
 		String regexNumeroCuentaReporte = "#[a-z]*(\\d)+[a-z]*(\\d)+(\\*)+|#{0,1}(\\d)+[a-z]*(\\*)+|(\\d){3,}[.]{3,}";
-		
+
 		Pattern patronNumeroCuentaReporte = Pattern.compile(regexNumeroCuentaReporte,Pattern.CASE_INSENSITIVE);
-		
+
 		return patronNumeroCuentaReporte;
 	}
 
 	public Pattern getPatronFechaFormatoReporte() {
-		
+
 		String regexFechaFormatoReporte = "(\\d{2}/\\d{4}\\s+){2,}";
-		
+
 		Pattern patronFechaFormatoReporte = Pattern.compile(regexFechaFormatoReporte);
-		
+
 		return patronFechaFormatoReporte;
 	}
+
+
+	public static int getNumeroEntero(String texto) {
+
+		if (patronNumeroEntero == null) {
+
+			String regexPatronNumeroEntero = "\\d+";
+
+			patronNumeroEntero = Pattern.compile(regexPatronNumeroEntero);
+
+		}
+
+		Matcher matcher = patronNumeroEntero.matcher(texto);
+		int numero = matcher.find() ? Integer.parseInt(matcher.group()) : 0;
+
+		return numero;
+	}
+
+	public static double getNumeroReal(String texto) {
+
+		if (patronNumeroReal == null) {
+
+			String regexPatronNumeroReal = "\\d+.{0,1}\\d*";
+
+			patronNumeroReal = Pattern.compile(regexPatronNumeroReal);
+
+		}
+
+		Matcher matcher = patronNumeroEntero.matcher(texto);
+		double numero = matcher.find() ? Double.parseDouble(matcher.group()) : 0;
+
+
+		return numero;
+	}
+
 
 }
