@@ -111,95 +111,95 @@ public class CuentaReporte {
 	}
 
 	public String getPaymentStatus() {
-		return paymentStatus;
+		return paymentStatus == null ? "" : paymentStatus;
 	}
 
 	public String getStatusUpdated() {
-		return statusUpdated;
+		return statusUpdated == null ? "" : statusUpdated;
 	}
 
 	public String getBalance() {
-		return balance;
+		return balance == null ? "" : balance;
 	}
 
 	public String getBalanceUpdated() {
-		return balanceUpdated;
+		return balanceUpdated == null ? "" : balanceUpdated;
 	}
 
 	public String getMonthlyPayment() {
-		return monthlyPayment;
+		return monthlyPayment == null ? "" : monthlyPayment;
 	}
 
 	public String getPastDueAmount() {
-		return pastDueAmount;
+		return pastDueAmount == null ? "" : pastDueAmount;
 	}
 
 	public String getHighestBalance() {
-		return highestBalance;
+		return highestBalance == null ? "" : highestBalance;
 	}
 
 	public String getTerms() {
-		return terms;
+		return terms == null ? "" : terms;
 	}
 
 	public String getResponsibility() {
-		return responsibility;
+		return responsibility == null ? "" : responsibility;
 	}
 
 	public String getYourStatement() {
-		return yourStatement;
+		return yourStatement == null ? "" : yourStatement;
 	}
 
 	public String getComments() {
-		return comments;
+		return comments == null ? "" : comments;
 	}
 	
 	public String getLimit() {
-		return limit;
+		return limit == null ? "" : limit;
 	}
 	
 	public String getDateOpened() {
-		return dateOpened;
+		return dateOpened == null ? "" : dateOpened;
 	}
 	
 	public String getDateClosed() {
-		return dateClosed;
+		return dateClosed == null ? "" : dateClosed;
 	}
 	
 	public String getLoanType() {
-		return loanType;
+		return loanType == null ? "" : loanType;
 	}
 	
 	public String getStatusDetail() {
-		return statusDetail;
+		return statusDetail == null ? "" : statusDetail;
 	}
 	
 	public String getPaymentReceived() {
-		return paymentReceived;
+		return paymentReceived == null ? "" : paymentReceived;
 	}
 	
 	public String getOriginalCreditor() {
-		return originalCreditor;
+		return originalCreditor == null ? "" : originalCreditor;
 	}
 	
 	public String getLastActivity() {
-		return lastActivity;
+		return lastActivity == null ? "" : lastActivity;
 	}
 	
 	public String getAccounttypeone() {
-		return accounttypeone;
+		return accounttypeone == null ? "" : accounttypeone;
 	}
 	
 	public String getAccounttypetwo() {
-		return accounttypetwo;
+		return accounttypetwo == null ? "" : accounttypetwo;
 	}
 	
 	public String getCreditusage() {
-		return creditusage;
+		return creditusage == null ? "" : creditusage;
 	}
 	
 	public String getCreditusagedescription() {
-		return creditusagedescription;
+		return creditusagedescription == null ? "" : creditusagedescription;
 	}
 	
 	public Map<String, List<HistorialPago>> getMesesCanceladosPorAno() {

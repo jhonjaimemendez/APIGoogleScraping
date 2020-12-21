@@ -97,7 +97,7 @@ public class Utilidades {
 			posicionFinal  = textoMinuscula.indexOf("\r",posicionInicial);
 
 		if (posicionInicial >= 0 && posicionFinal > posicionInicial)
-			dato = textoMinuscula.substring(posicionInicial,posicionFinal).replaceFirst(",", "").
+			dato = textoMinuscula.substring(posicionInicial,posicionFinal).replaceFirst("!", "").replaceFirst("-", "").replaceFirst(",", "").
 			replaceAll(tag + "|\r|:|$|\\.|;"," ").trim();
 
 
@@ -152,6 +152,60 @@ public class Utilidades {
 
 
 		return columna.toString();
+
+	}
+
+	public String getColumnaPDFPrimeraHoja(PDDocument document, int posicionInicial, int posicionFinal) throws IOException {
+
+		StringBuffer columna = new StringBuffer();
+
+		columna.append(getTextoArea(document,0, posicionInicial, 0, posicionFinal , 8200));
+
+		return columna.toString().toLowerCase();
+
+	}
+
+
+	public String getFechaFormatoMesDiaAño(String texto) {
+
+		return getFechaFormatoMesDiaAño(texto, " ",false);
+
+	}
+
+	public String getFechaFormatoMesDiaAño(String texto,String caracterSeparacion, boolean numeroMesPresente) {
+
+		String resultado = "";
+		String numeroMes = "";
+		String año =  "";
+		String dia = "";
+
+		String[] textoFecha = texto.replaceAll(",", "").split(caracterSeparacion);
+
+		if (textoFecha.length == 1) {
+
+			resultado = textoFecha[0];
+
+		} else if (textoFecha.length == 2) {
+
+			dia = "01";
+			numeroMes = numeroMesPresente ? (textoFecha[0].length() == 1 ? "0" + textoFecha[0] : textoFecha[0]) : getNumeroMes(textoFecha[0].substring(0,3));
+			año = textoFecha[1];
+
+			resultado = numeroMes + "/" + (dia.length() == 1 ? "0" + dia : dia) + "/" + año;
+
+		} else if (textoFecha.length == 3) {
+
+			dia = textoFecha[1];
+			numeroMes = numeroMesPresente ?  (textoFecha[0].length() == 1 ? "0" + textoFecha[0] : textoFecha[0]) : getNumeroMes(textoFecha[0].substring(0,3));
+			año = textoFecha[2];
+			resultado = numeroMes + "/" + (dia.length() == 1 ? "0" + dia : dia) + "/" + año;
+
+		}
+
+
+
+		return resultado;
+
 
 	}
 
@@ -481,7 +535,9 @@ public class Utilidades {
 
 		}
 
-		Matcher matcher = patronNumeroEntero.matcher(texto);
+
+
+		Matcher matcher = patronNumeroEntero.matcher(texto.replaceAll(",|<|>", ""));
 		int numero = matcher.find() ? Integer.parseInt(matcher.group()) : 0;
 
 		return numero;
@@ -497,12 +553,13 @@ public class Utilidades {
 
 		}
 
-		Matcher matcher = patronNumeroEntero.matcher(texto);
+		Matcher matcher = patronNumeroReal.matcher(texto.replaceAll(",|>|<", ""));
 		double numero = matcher.find() ? Double.parseDouble(matcher.group()) : 0;
 
 
 		return numero;
 	}
+
 
 
 }
