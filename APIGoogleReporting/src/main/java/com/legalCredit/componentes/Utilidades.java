@@ -415,6 +415,22 @@ public class Utilidades {
 		return numeroMes < 10 ? "0"+numeroMes : ""+numeroMes;
 	}
 
+	public String eliminarFilasVacias(String texto) {
+
+		String[] filas = texto.replace("\r","").split("\n");
+		StringBuffer filasSalidas = new StringBuffer();
+
+		for (String fila : filas) {
+
+			if (!fila.isEmpty() && !fila.replace(" ", "").replace("\r", "").replace("\n", "").isEmpty())
+				filasSalidas.append(fila).append("\n");
+
+		}
+
+		return filasSalidas.toString();
+
+	}
+
 
 	/**
 	 * Obtiene las lineas de un texto
