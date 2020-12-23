@@ -12,18 +12,38 @@
 
 package com.legalCredit.componentes;
 
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import java.awt.Rectangle;
-import java.io.IOException;
+import javax.imageio.ImageIO;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.rendering.ImageType;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripperByArea;
+import org.apache.tika.langdetect.OptimaizeLangDetector;
+import org.apache.tika.language.detect.LanguageDetector;
+import org.apache.tika.language.detect.LanguageResult;
+
+import net.sourceforge.tess4j.ITesseract;
+import net.sourceforge.tess4j.ITesseract.RenderedFormat;
+import net.sourceforge.tess4j.Tesseract;
+import net.sourceforge.tess4j.TesseractException;
+import net.sourceforge.tess4j.util.PdfUtilities;
+
+
+
 
 
 /**
@@ -98,7 +118,7 @@ public class Utilidades {
 
 		if (posicionInicial >= 0 && posicionFinal > posicionInicial)
 			dato = textoMinuscula.substring(posicionInicial,posicionFinal).replaceFirst("!", "").replaceFirst("-", "").replaceFirst(",", "").
-			replaceAll(tag + "|\r|:|$|\\.|;"," ").trim();
+			replaceAll(tag + "|\r|:|$|;|\\."," ").trim();
 
 
 		return dato;
@@ -136,6 +156,41 @@ public class Utilidades {
 
 			resultado = textoMinuscula.substring(posicionInicialCreditInquieres, posicionFinalCreditInquieres).
 			replaceAll(tag, "").replaceAll("\r|:|\n"," ").trim();
+
+		return resultado;
+
+	}
+	
+	public String getLineasAnterior(String textoMinuscula,String tag,int numeroLineas) {
+
+
+		String resultado = "";
+
+		int posicionFinalComodin = textoMinuscula.indexOf(tag);
+		int posicionInicial = 0;
+		int posicionFinal = 0;
+
+		int indice = 0;
+
+		while (indice < numeroLineas) {
+
+			posicionFinal = posicionFinalComodin;
+
+			posicionInicial = textoMinuscula.lastIndexOf("\n",posicionFinalComodin-4) - 2;
+			posicionInicial = textoMinuscula.lastIndexOf("\n",posicionInicial);
+
+
+			posicionFinalComodin = posicionInicial;
+
+			indice++;
+		}
+
+
+		if  (posicionInicial >=0 && posicionInicial < posicionFinal) 
+
+			resultado = textoMinuscula.substring(posicionInicial, posicionFinal)
+			.replaceAll("\r"," ").replaceAll(":", " ").
+			replaceAll("\n","").trim();
 
 		return resultado;
 
@@ -350,8 +405,6 @@ public class Utilidades {
 
 	public String[] getMeses() {
 
-
-
 		return meses;
 	}
 
@@ -523,8 +576,25 @@ public class Utilidades {
 
 		return patronFechaFormatoReporte;
 	}
+	
+	public Pattern getPatronFechaMMDDYYYYY() {
 
+		String regexPatronFechaMMDDYYYYY = "\\d{2}/\\d{2}/\\d{4}";
 
+		Pattern patronFechaMMDDYYYYY = Pattern.compile(regexPatronFechaMMDDYYYYY);
+
+		return patronFechaMMDDYYYYY;
+	}
+
+	public Pattern getPatronNumeroCuenta() {
+		
+		String regexNumeroCuenta = "([a-z,A-z]*\\d{3,}[a-z,A-z]+\\d*)|(\\d{2,}-\\d{2,})|\\d{1,}|[x]{4,}";
+		
+		Pattern patronNumeroCuenta = Pattern.compile(regexNumeroCuenta);
+		
+		return patronNumeroCuenta;
+	}
+	
 	public static int getNumeroEntero(String texto) {
 
 		if (patronNumeroEntero == null) {
@@ -553,13 +623,229 @@ public class Utilidades {
 
 		}
 
-		Matcher matcher = patronNumeroReal.matcher(texto.replaceAll(",|>|<", ""));
+		Matcher matcher = patronNumeroReal.matcher(texto.replaceAll(",|>|<", "").replace(" ","."));
 		double numero = matcher.find() ? Double.parseDouble(matcher.group()) : 0;
 
 
 		return numero;
 	}
 
+	public String getIdiomaTexto(String texto) {
+
+		String resultado = "en"; 
+
+		try {
+
+			LanguageDetector detector = new OptimaizeLangDetector().loadModels();
+			LanguageResult result = detector.detect(texto);
+			resultado = result.getLanguage();
+
+		} catch (Exception e) {}
 
 
+		return resultado;
+
+	}
+
+	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile) {
+
+		File file = null;
+		String idioma = "";
+
+		try {
+
+			PDFRenderer pdfRenderer = new PDFRenderer(document);
+			Tesseract tesseract = new Tesseract();
+			tesseract.setPageSegMode(1);
+			tesseract.setDatapath("recursos/tessdata");
+			tesseract.setLanguage("eng"); //Se escoge inicialmente lenguaje ingles pero se revisara si este es
+
+
+			idioma  = getIdiomaTexto(getTextoImagen(pdfRenderer,tesseract,nombreArchivo,0));
+
+			if (idioma.equalsIgnoreCase("es")) 
+
+				tesseract.setLanguage("spa"); 
+
+			else 
+				tesseract.setLanguage("eng");
+
+			file = getPDFAndTextImages(pdfRenderer,tesseract,tmpFile.getName(),document.getNumberOfPages());
+
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+		} 
+
+
+		return new DataOCRFile(file, idioma);
+
+	}
+
+	private String getTextoImagen(PDFRenderer pdfRenderer,ITesseract tesseract,String nombreArchivo,
+			int numeroPagina) 
+					throws IOException, TesseractException {
+
+		BufferedImage bim = pdfRenderer.renderImageWithDPI(numeroPagina, 300, ImageType.RGB);
+		String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + numeroPagina;
+
+		File temp = File.createTempFile(nombreImagen, ".tif"); 
+		ImageIO.write(bim, "tif", temp);
+
+		String result = tesseract.doOCR(temp);
+
+		return result;
+
+	}
+
+
+	private File getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
+			int totalPaginas) throws Exception {
+
+		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
+		list.add(RenderedFormat.PDF);
+
+		File[] files = new File[totalPaginas];
+
+		for (int page = 0; page < totalPaginas; page++) {
+
+			BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 300, ImageType.RGB);
+			String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + page;
+			String path = "recursos/temp/" + nombreImagen;
+
+			File temp = File.createTempFile(nombreImagen, ".tif"); 
+			ImageIO.write(bim, "tif", temp);
+
+			tesseract.createDocuments(temp.getAbsolutePath(), path , list);
+
+			File file = new File(path + ".pdf");
+			files[page] = file;
+
+		}
+
+		File fileOutputPDF = File.createTempFile("mergePdf", "pdf");
+
+		PdfUtilities.mergePdf(files, fileOutputPDF);
+
+		return fileOutputPDF;
+
+	}
+
+	//******************************************* Utilidades para el OCR ***********************************
+	public String getFormatearTexto(String texto, String[] palabrasCorregir) {
+
+		//Se remplanzan las tildes en caso de los texto en español
+		texto = texto.toLowerCase().replaceAll("á", "a").replaceAll("é", "e").replaceAll("í", "i").
+				replaceAll("ó", "o").replaceAll("ú", "u").replaceAll("identilication","identification").
+				replaceAll("idenlificalion","identification").replaceAll("cuentaversas","cuentas adversas").
+				replaceAll("repod","report").replaceAll(":","").replaceAll("\\(","").replaceAll("\\)","").
+				replaceAll("lnfonnada", "informada").replaceAll("\\*","_").replaceAll("\\{","").replaceAll("\\[", "").
+				replaceAll("__", "  ").replaceAll("recentbalance", "recent balance").
+				replaceAll("addressidentification", "address identification").replaceAll("cuentadividual", "cuenta individual").
+				replaceAll("cuentaplazos","cuenta plazos").replaceAll("\\\\", "").replaceAll("[|]", "").replaceAll("año", "alto");
+
+
+		//Se corrigen las palabras que se leen mal por el OCR
+		StringTokenizer tokenizer = new StringTokenizer(texto);
+
+		while (tokenizer.hasMoreTokens()) {
+
+			String palabra = tokenizer.nextToken().trim();
+
+			if (palabra.length() > 2 && !palabra.contains(",")) {
+
+				for (String palabraCorrecion : palabrasCorregir) {
+
+					int valor = computeLevenshteinDistance(palabra, palabraCorrecion); 
+
+					if (palabraCorrecion.length() <= 5) {
+
+						if ( valor == 1 ) 
+
+							texto = texto.replaceAll("\\b" + palabra + "\\b", " " + palabraCorrecion+" ");
+
+					} else 
+
+						if ( valor >= 1 && valor <= 2) {
+
+							texto = texto.replaceAll("\\b" +palabra + "\\b", " " + palabraCorrecion + " ");
+
+						}
+				}
+
+			}
+		}	
+
+
+		texto = texto.replaceAll("( ){2,}", " ");
+
+		return texto;
+	}
+
+
+
+	//******************** Este codigo fue tomado de internet *********************************************
+
+	private static int computeLevenshteinDistance(String str1, String str2) {
+
+		return computeLevenshteinDistance(str1.toCharArray(),
+				str2.toCharArray());
+	}
+
+	private static int minimum(int a, int b, int c) {
+		return Math.min(a, Math.min(b, c));
+	}
+
+	private static int computeLevenshteinDistance(char [] str1, char [] str2) {
+		int [][]distance = new int[str1.length+1][str2.length+1];
+
+		for(int i=0;i<=str1.length;i++){
+			distance[i][0]=i;
+		}
+		for(int j=0;j<=str2.length;j++){
+			distance[0][j]=j;
+		}
+		for(int i=1;i<=str1.length;i++){
+			for(int j=1;j<=str2.length;j++){ 
+				distance[i][j]= minimum(distance[i-1][j]+1,
+						distance[i][j-1]+1,
+						distance[i-1][j-1]+
+						((str1[i-1]==str2[j-1])?0:1));
+			}
+		}
+		return distance[str1.length][str2.length];
+
+	}
+
+	//************************************************************************************************************************************
+
+
+
+	//**************************************************** class DataOCRFile ***************************************************************
+
+	public class DataOCRFile {
+
+		private File file;
+		private String idioma;
+
+
+		public DataOCRFile(File file, String idioma) {
+
+			this.file = file;
+			this.idioma = idioma;
+
+		}
+
+
+		public File getFile() {
+			return file;
+		}
+
+
+		public String getIdioma() {
+			return idioma;
+		}
+
+	}
 }

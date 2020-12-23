@@ -12,6 +12,8 @@
 
 package com.legalCredit.modelo;
 
+
+
 public class Inquiery {
 
 	private String accountName; 
@@ -21,11 +23,14 @@ public class Inquiery {
 	private String contactInformation; 
 	private String inquieresType;
 	private String comments;
+	private String inquieresTypeTwo;
+	private String permissible_purpose;
 	
-	
+
 	public Inquiery(String accountName, String inquiryDate, String removalDate, String businessType,
-			        String contactInformation, String inquieresType,String comments) {
-		
+			String contactInformation, String inquieresType,String comments,String inquieresTypeTwo,
+			String permissible_purpose) {
+
 		this.accountName = accountName;
 		this.inquiryDate = inquiryDate;
 		this.removalDate = removalDate;
@@ -33,6 +38,9 @@ public class Inquiery {
 		this.contactInformation = contactInformation;
 		this.inquieresType = inquieresType;
 		this.comments = comments;
+		this.inquieresTypeTwo = inquieresTypeTwo;
+		this.permissible_purpose = permissible_purpose;
+		
 	}
 
 
@@ -64,8 +72,16 @@ public class Inquiery {
 	public String getInquieresType() {
 		return inquieresType;
 	}
-	
+
 	public String getComments() {
 		return comments;
+	}
+
+	public String getInquieresTypeTwo() {
+		return inquieresTypeTwo;
+	}
+	
+	public String getPermissible_purpose() {
+		return permissible_purpose;
 	}
 }
