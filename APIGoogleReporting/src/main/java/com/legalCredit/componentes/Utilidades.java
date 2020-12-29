@@ -12,14 +12,17 @@
 
 package com.legalCredit.componentes;
 
+
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
@@ -35,6 +38,7 @@ import org.apache.pdfbox.text.PDFTextStripperByArea;
 import org.apache.tika.langdetect.OptimaizeLangDetector;
 import org.apache.tika.language.detect.LanguageDetector;
 import org.apache.tika.language.detect.LanguageResult;
+import org.json.JSONObject;
 
 import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.ITesseract.RenderedFormat;
@@ -220,6 +224,10 @@ public class Utilidades {
 
 	}
 
+	public String eliminarMasDeDosEspaciosEnTexto(String texto) {
+		
+		return texto.replaceAll("( ){2,}", " ");
+	}
 
 	public String getFechaFormatoMesDiaAño(String texto) {
 
@@ -715,8 +723,24 @@ public class Utilidades {
 
 	}
 
+	public JSONObject getJSONObjectOrdenNatural() {
+		
+		JSONObject json = new JSONObject();
+		
+		try {
+			
+			Field changeMap = json.getClass().getDeclaredField("map");
+			changeMap.setAccessible(true);
+			changeMap.set(json, new LinkedHashMap<>());
+			changeMap.setAccessible(false);
+			
+		} catch (Exception e) {}
+		
+		return json;
 
-	private File getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
+	}
+
+ 	private File getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
 			int totalPaginas) throws Exception {
 
 		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
@@ -747,6 +771,37 @@ public class Utilidades {
 		return fileOutputPDF;
 
 	}
+	
+	public String[] getPalabrasCorregirEspañol() {
+		
+		String[] palabrasCorregir = {"responsabilidad","cuenta","actualizacion","tipo","informacion","fecha",
+                "pagado","prestamo","alto","pago","estado","apertura","nombres","transunion",
+                "adversas","satisfactorias","numero","domicilios","domicilio","recibido",
+                 "cierre","observaciones","saldo","excedente","credito","limite","conjunta"};
+		
+		return palabrasCorregir;
+	}
+	
+	public String[] getPalabrasCorregirIngles() {
+		
+		String[] palabrasCorregir = {"address","date","inquiry","number","partial","recentbalance",
+				"status","individual","account","identification","responsibility","limit",
+				"opened","open","dept","payment","account","monthly","high","balance","year",
+				"payment","information","first","toyota","equifax","transunion","experian","security",
+				"credit","phone","original","creditor","reported","comment","terms","dispute","items",
+				"history","identification","original","before","after","address id","address",
+				"current","previous","dear","file","formerly","finalballoon"};
+
+		return palabrasCorregir;
+		
+	}
+	
+	public String getValor(String[] array,int posicion) {
+
+		return posicion < array.length ? array[posicion].replaceAll("\r", "").replaceAll("\n", " ") : "";		
+
+	}
+
 
 	//******************************************* Utilidades para el OCR ***********************************
 	public String getFormatearTexto(String texto, String[] palabrasCorregir) {

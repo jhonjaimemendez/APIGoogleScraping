@@ -19,7 +19,12 @@ package com.legalCredit;
  */
 
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
 import java.net.HttpURLConnection;
+import java.util.Base64;
+
+import org.json.JSONObject;
 
 import com.google.cloud.functions.HttpFunction;
 import com.google.cloud.functions.HttpRequest;
@@ -59,7 +64,36 @@ public class ScraperCreditReport implements HttpFunction {
 		BufferedWriter writer = response.getWriter();
 		writer.write(result);
 		
+	}
+	
+	
+	public void scraper(String textoPDFBase64) throws Exception {
+
+		JSONObject jsonReporte = new JSONObject();
+		jsonReporte.put("bureau_id","1") ;
+		jsonReporte.put("credit_file_date","13") ;
+		jsonReporte.put("file", textoPDFBase64);
 		
+		String result = new ScrapingPDF().scrapingPDF(jsonReporte.toString());
+
+		
+	}
+	
+	/**
+	 * 
+	 * @param args
+	 * @throws Exception
+	 */
+	public static void main(String[] args) throws Exception {
+
+		File file = new File("reportes/reportesScrapeados/equifax/creditReport_1485542551006.pdf");
+		FileInputStream fileInputStream = new FileInputStream(file);
+		byte[] bytes = new byte[(int)file.length()];
+		fileInputStream.read(bytes);
+		fileInputStream.close();
+
+		String encoded = Base64.getEncoder().encodeToString(bytes);
+		new ScraperCreditReport().scraper(encoded);
 
 	}
 

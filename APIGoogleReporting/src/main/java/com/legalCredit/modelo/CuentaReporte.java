@@ -49,17 +49,20 @@ public class CuentaReporte {
 	private String accounttypetwo;
 	private String creditusage;
 	private String creditusagedescription;
+	private String creditFileStatus;
+	
 	private Map<String, List<HistorialPago>> mesesCanceladosPorAno;
 	
-
+	public CuentaReporte(){}
+	
 	public CuentaReporte(String accountName, String accountNumber, String accountType,
 			String accountStatus, String paymentStatus, String statusUpdated, String balance, String balanceUpdated,
 			String limit, String monthlyPayment, String pastDueAmount, String highestBalance, String terms,
 			String responsibility, String yourStatement, String comments, String dateOpened, String loanType,
 			String dateClosed, String statusDetail, String paymentReceived,String originalCreditor,
 			String lastActivity, String accounttypeone,String accounttypetwo,String creditusage,
-			String creditusagedescription,Map<String, List<HistorialPago>> mesesCanceladosPorAno) {
-		
+			String creditusagedescription,Map<String, List<HistorialPago>> mesesCanceladosPorAno,
+			String creditFileStatus) {
 		
 		this.accountName = accountName;
 		this.accountNumber = accountNumber;
@@ -89,6 +92,27 @@ public class CuentaReporte {
 		this.creditusage = creditusage;
 		this.creditusagedescription = creditusagedescription;
 		this.mesesCanceladosPorAno = mesesCanceladosPorAno;
+		this.creditFileStatus = creditFileStatus;
+	
+	}
+	
+
+	public CuentaReporte(String accountName, String accountNumber, String accountType,
+			String accountStatus, String paymentStatus, String statusUpdated, String balance, String balanceUpdated,
+			String limit, String monthlyPayment, String pastDueAmount, String highestBalance, String terms,
+			String responsibility, String yourStatement, String comments, String dateOpened, String loanType,
+			String dateClosed, String statusDetail, String paymentReceived,String originalCreditor,
+			String lastActivity, String accounttypeone,String accounttypetwo,String creditusage,
+			String creditusagedescription,Map<String, List<HistorialPago>> mesesCanceladosPorAno) {
+		
+		this(accountName,  accountNumber,  accountType,
+				 accountStatus,  paymentStatus,  statusUpdated,  balance,  balanceUpdated,
+				 limit,  monthlyPayment,  pastDueAmount,  highestBalance,  terms,
+				 responsibility,  yourStatement,  comments,  dateOpened,  loanType,
+				 dateClosed,  statusDetail,  paymentReceived, originalCreditor,
+				 lastActivity,  accounttypeone, accounttypetwo, creditusage,
+				 creditusagedescription, mesesCanceladosPorAno,"");
+		
 	}
 
 	
@@ -204,6 +228,126 @@ public class CuentaReporte {
 	
 	public Map<String, List<HistorialPago>> getMesesCanceladosPorAno() {
 		return mesesCanceladosPorAno;
+	}
+	
+	public String getCreditFileStatus() {
+		return creditFileStatus;
+	}
+
+	public void setAccountName(String accountName) {
+		this.accountName = accountName;
+	}
+
+	public void setAccountNumber(String accountNumber) {
+		this.accountNumber = accountNumber;
+	}
+
+	public void setAccountType(String accountType) {
+		this.accountType = accountType;
+	}
+
+	public void setAccountStatus(String accountStatus) {
+		this.accountStatus = accountStatus;
+	}
+
+	public void setPaymentStatus(String paymentStatus) {
+		this.paymentStatus = paymentStatus;
+	}
+
+	public void setStatusUpdated(String statusUpdated) {
+		this.statusUpdated = statusUpdated;
+	}
+
+	public void setBalance(String balance) {
+		this.balance = balance;
+	}
+
+	public void setBalanceUpdated(String balanceUpdated) {
+		this.balanceUpdated = balanceUpdated;
+	}
+
+	public void setLimit(String limit) {
+		this.limit = limit;
+	}
+
+	public void setMonthlyPayment(String monthlyPayment) {
+		this.monthlyPayment = monthlyPayment;
+	}
+
+	public void setPastDueAmount(String pastDueAmount) {
+		this.pastDueAmount = pastDueAmount;
+	}
+
+	public void setHighestBalance(String highestBalance) {
+		this.highestBalance = highestBalance;
+	}
+
+	public void setTerms(String terms) {
+		this.terms = terms;
+	}
+
+	public void setResponsibility(String responsibility) {
+		this.responsibility = responsibility;
+	}
+
+	public void setYourStatement(String yourStatement) {
+		this.yourStatement = yourStatement;
+	}
+
+	public void setComments(String comments) {
+		this.comments = comments;
+	}
+
+	public void setDateOpened(String dateOpened) {
+		this.dateOpened = dateOpened;
+	}
+
+	public void setLoanType(String loanType) {
+		this.loanType = loanType;
+	}
+
+	public void setDateClosed(String dateClosed) {
+		this.dateClosed = dateClosed;
+	}
+
+	public void setStatusDetail(String statusDetail) {
+		this.statusDetail = statusDetail;
+	}
+
+	public void setPaymentReceived(String paymentReceived) {
+		this.paymentReceived = paymentReceived;
+	}
+
+	public void setOriginalCreditor(String originalCreditor) {
+		this.originalCreditor = originalCreditor;
+	}
+
+	public void setLastActivity(String lastActivity) {
+		this.lastActivity = lastActivity;
+	}
+
+	public void setAccounttypeone(String accounttypeone) {
+		this.accounttypeone = accounttypeone;
+	}
+
+	public void setAccounttypetwo(String accounttypetwo) {
+		this.accounttypetwo = accounttypetwo;
+	}
+
+	public void setCreditusage(String creditusage) {
+		this.creditusage = creditusage;
+	}
+
+	public void setCreditusagedescription(String creditusagedescription) {
+		this.creditusagedescription = creditusagedescription;
+	}
+
+	public void setCreditFileStatus(String creditFileStatus) {
+		this.creditFileStatus = creditFileStatus;
+	}
+
+	public void setMesesCanceladosPorAno(Map<String, List<HistorialPago>> mesesCanceladosPorAno) {
+		this.mesesCanceladosPorAno = mesesCanceladosPorAno;
 	}
 	
 	
