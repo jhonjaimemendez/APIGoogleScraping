@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.sound.sampled.TargetDataLine;
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.json.JSONArray;
@@ -56,7 +58,7 @@ public class ScrapingPDF {
 		String result = "";
 
 		try {
-			
+
 			boolean fileOCR = false;
 
 			JSONObject rootJSON = new JSONObject(Json);
@@ -78,7 +80,7 @@ public class ScrapingPDF {
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String textoArchivo = pdfStripper.getText(document).toLowerCase().replaceAll("trans union", "transunion").
 					replaceAll("expenan","experian");
-
+			
 			if (textoArchivo.isBlank() ||  textoArchivo.length() < 80  || 
 					textoArchivo.startsWith("Scanned by") || textoArchivo.startsWith("Scanned with") || 
 					textoArchivo.toLowerCase().startsWith("generated")) { //Se verfica que el archivo no se encuentre escaneado
@@ -187,7 +189,7 @@ public class ScrapingPDF {
 
 		int posicionInicialCuenta = 0;
 		int posicionFinalCuenta = 0;
-		
+
 		Reporte reporte = new Reporte();
 		reporte.setSsn(getSSN(textoMinuscula));
 		reporte.setCra(cra);
@@ -218,8 +220,8 @@ public class ScrapingPDF {
 		reporte.setBirthyear(utilidades.getDatoVertical(textoMinuscula,elementosReporte[21]));
 		reporte.setOverallcreditusage(utilidades.getDatoVertical(textoMinuscula,elementosReporte[22]));
 		reporte.setPatron("PatronGenerico");
-	
-		
+
+
 
 		//************************* Se obtienen los datos de la cuentas del reporte ********************
 
@@ -292,8 +294,8 @@ public class ScrapingPDF {
 				cuentaReporte.setCreditusage(getCreditUsagePatronGenerico(textoCuenta, "payment history"));
 				cuentaReporte.setCreditusagedescription(getCreditUsageDescriptionPatronGenerico(textoCuenta, elementos[18]));
 				cuentaReporte.setOriginalCreditor(utilidades.getDatoHorizontal(textoCuenta, elementos[17]));
-				
-				
+
+
 				if (!cuentaReporte.getAccounttypeone().isEmpty())
 
 					accountTypeBefore =	cuentaReporte.getAccounttypeone();
@@ -347,7 +349,7 @@ public class ScrapingPDF {
 				}
 
 				cuentaReporte.setMesesCanceladosPorAno(mesesCanceladosPorAno);
-				
+
 				cuentasReporte.add(cuentaReporte);
 
 			}
@@ -394,7 +396,7 @@ public class ScrapingPDF {
 						String textoCuenta = textoCuentaInquires.substring(posicionInicialInquires,posicionFinalInquires);
 
 						String nombreCuenta = getUltimaLineaPatronGenerico(textoCuenta,cra);
-						String inquiryDate = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta, elementosInquires[0]));
+						String inquiryDate = utilidades.getDatoHorizontal(textoCuenta, elementosInquires[0]);
 						String[] inquiryDates = inquiryDate.split(" ");
 						String removalDate = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta, elementosInquires[1]));
 						String businessType = utilidades.getDatoHorizontal(textoCuenta, elementosInquires[2]);
@@ -405,7 +407,7 @@ public class ScrapingPDF {
 
 						for (String fechaInquiry : inquiryDates) 
 
-							cuentasInquieries.add(new Inquiery(nombreCuenta, fechaInquiry, removalDate,
+							cuentasInquieries.add(new Inquiery(nombreCuenta, utilidades.getFechaFormatoMesDiaAño(fechaInquiry), removalDate,
 									businessType, contactInformation, inquieresType,"","",""));
 					}
 
@@ -457,15 +459,15 @@ public class ScrapingPDF {
 						String textoCuenta = textoCuentaPublic.substring(posicionInicialPublic,posicionFinalPublic);
 
 						String accountName = getUltimaLineaPatronGenerico(textoCuenta,cra);
-						String filingDate = utilidades.getDatoHorizontal(textoCuenta, elementosPublic[0]);
+						String filingDate = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta, elementosPublic[0]));
 						String clain_amount = utilidades.getDatoHorizontal(textoCuenta, elementosPublic[1]);
 						String referenceNumber = utilidades.getDatoHorizontal(textoCuenta, elementosPublic[2]);
 						String court = utilidades.getDatoHorizontal(textoCuenta, elementosPublic[3]);
 						String plaintiff = utilidades.getDatoHorizontal(textoCuenta, elementosPublic[4]);
 
 						publicAccounts.add(new PublicAccount(accountName, filingDate, "", clain_amount, 
-								                             "","", referenceNumber, court, 
-								                             plaintiff));
+								"","", referenceNumber, court, 
+								plaintiff));
 
 					}
 
@@ -485,6 +487,8 @@ public class ScrapingPDF {
 	 */
 	private String scrapearEquifaxPatronDos(String textoMinuscula,String textoConFormato) throws IOException {
 
+		textoConFormato = textoConFormato.replaceAll("account number", "accountnumber");
+		
 		String[] elementos = patronEquifax.getElementosAContenerTextoRepetidamentePatronDos();
 		String[] tiposCuentaDos = {"revolving accounts","mortgage accounts",
 				"installment accounts","other accounts",
@@ -493,41 +497,27 @@ public class ScrapingPDF {
 
 		List<CuentaReporte> cuentasReporte = new ArrayList<CuentaReporte>();
 		List<Inquiery> cuentasInquieries = new ArrayList<Inquiery>();
+		List<PublicAccount> cuentasPublicas = new ArrayList<PublicAccount>();
 		Map<String,List<HistorialPago>> informacionCuentas = null;
 
-		String ssn = utilidades.getDatoHorizontal(textoMinuscula, patronEquifax.getTagSSN());
-		String name = utilidades.getDatoHorizontal(textoMinuscula,patronEquifax.getTagAccountNamePatronDos()).replaceAll(" +", " ");
-		String employeer[] = getNombreEmpleadosEquifaxPatronDos(textoMinuscula,patronEquifax.getTagEmployeePatronDos());
-		String opencreditcards = "";
-		String openretailcards = "";
-		String openrealrstateloans = "";
-		String openinstallmentloans = "";
-		String totalopenaccounts = utilidades.getDatoHorizontal(textoMinuscula, "total");
-		String accountseverlate = "";
-		String collectionsaccounts = utilidades.getDatoHorizontal(textoMinuscula,"collections");
-		String averageaccountage = utilidades.getDatoHorizontal(textoMinuscula, "average account age");
-		String oldestaccount = utilidades.getDatoHorizontal(textoMinuscula, "oldest account");
-		String newestaccount = utilidades.getDatoHorizontal(textoMinuscula, "most recent account");
-		String creditdebt = "";
-		String totalcredit = "";
-		String creditandretailcarddebt = utilidades.getDatoHorizontal(textoMinuscula,"accounts with negative information");
-		String realestatedebt = "";
-		String installmentloansdebt = "";
-		String collectionsdebt = "";
-		String totaldebt = "";
+		Reporte reporte = new Reporte();
+		reporte.setSsn(utilidades.getDatoHorizontal(textoMinuscula, patronEquifax.getTagSSN()));
+		reporte.setCra(patronEquifax.getCra());
+		reporte.setEmployeer(getNombreEmpleadosEquifaxPatronDos(textoMinuscula,patronEquifax.getTagEmployeePatronDos()));
+		reporte.setName(utilidades.eliminarMasDeDosEspaciosEnTexto(utilidades.getDatoHorizontal(textoMinuscula,patronEquifax.getTagAccountNamePatronDos())));
+		reporte.setTotalopenaccounts(utilidades.getDatoHorizontal(textoMinuscula, "total"));
+		reporte.setCollectionsaccounts(utilidades.getDatoHorizontal(textoMinuscula,"collections"));
+		reporte.setAverageaccountage(utilidades.getDatoHorizontal(textoMinuscula, "average account age"));
+		reporte.setOldestaccount(utilidades.getDatoHorizontal(textoMinuscula, "oldest account"));
+		reporte.setNewestaccount(utilidades.getDatoHorizontal(textoMinuscula, "most recent account"));
+		reporte.setCreditandretailcarddebt(utilidades.getDatoHorizontal(textoMinuscula,"accounts with negative information"));
+		reporte.setMypublicrecords(utilidades.getDatoHorizontal(textoMinuscula,"public records"));
+		reporte.setDateofreport(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula, patronEquifax.getTagAccountReportDate())));
+		reporte.setAddress(getAddressEquifaxPatronDos(textoMinuscula,patronTransunion.getTagAddress()));
+		reporte.setBirthyear(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula,patronEquifax.getTagBirthReportDate())));
+		reporte.setPatron("PatronDos");
 
-		String mypublicrecords = utilidades.getDatoHorizontal(textoMinuscula,"public records");
-		String creditscore = "";
-
-		String dateofreport = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula, patronEquifax.getTagAccountReportDate()));
-
-		String address[] = getAddressEquifaxPatronDos(textoMinuscula,patronTransunion.getTagAddress());
-		String birthyear =utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula,patronEquifax.getTagBirthReportDate()));
-		String overallcreditusage = "";
-		
-
-
-
+		System.out.println("marica1");
 
 		//****************** Se definen los datos de la cuenta ****************************************************
 
@@ -567,7 +557,7 @@ public class ScrapingPDF {
 
 		}
 
-
+		System.out.println("marica2");
 		int posicionInicialCuenta = 0;
 		int posicionFinalCuenta = 0;
 		int posicionInicialConFormatoCuenta = 0;
@@ -576,7 +566,7 @@ public class ScrapingPDF {
 		int posicionInicialConFormatoCuentaTag = 0;
 
 		do {
-
+			System.out.println("marica3");
 			posicionInicialCuenta = textoMinuscula.indexOf("account number",posicionInicialCuentaTag);
 			posicionFinalCuenta = textoMinuscula.indexOf("account number",
 					(posicionInicialCuenta + 10));
@@ -595,36 +585,30 @@ public class ScrapingPDF {
 
 				String textoCuenta = textoMinuscula.substring(posicionInicialCuenta,posicionFinalCuenta);
 				String textoCuentaFormato = textoConFormato.substring(posicionInicialConFormatoCuenta,posicionFinalConFormatoCuenta);
-				String accountName = getAccountNameEquifaxDos(textoMinuscula,textoCuenta);
-				String accountNumber = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[0]),"reported");;
-				String accountType = utilidades.getDatoHorizontal(textoCuenta, elementos[1]);
-				String accountStatus = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[3]).replaceAll("-", ""),"debttocredit ratio");
-				String paymentStatus = "";
-				String statusUpdated = "";
-				String balance = utilidades.getDatoHorizontal(textoCuenta, elementos[7]);
-				String balanceUpdated = ""; 
-				String limit = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[5],"account details"),"account type");;
-				String monthlyPayment = utilidades.getDatoHorizontal(textoCuenta, elementos[15]);
-				String pastDueAmount = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[8],"account details"),"date reported");
-				String highestBalance = utilidades.getDatoHorizontal(textoCuenta, elementos[4]);
-				String terms = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[6]),"term");
-				String responsibility = "";
-				String yourStatement = "";
-				String comments = utilidades.getDatoVertical(textoCuenta, elementos[11],"account details");
 
-				String dateOpened = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta, elementos[2]));
-				String accounttypeone = getTypeAccountNamePatronDos(accountName);
-				String accounttypetwo = getTypeAccount(textosTiposCuentas, textoCuenta, tagFinales,tiposCuentaDos);
-				String creditusage = "";
-				String creditusagedescription = ""; 
-				String loanType = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[10]),"date closed");
-				String dateClosed =utilidades.getFechaFormatoMesDiaAño( utilidades.getDatoHorizontal(textoCuenta, elementos[12]));
-				String statusDetail = "";
-				String paymentReceived = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[14]),"date of last");
-				String originalCreditor = utilidades.getDatoHorizontal(textoCuenta, elementos[9]);
-				String lastActivity = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[13]),"scheduled");
-				accountName = accountName.replace(accounttypeone, "").replace("(", "").replace(")", "");
-
+				CuentaReporte cuentaReporte = new CuentaReporte();
+				cuentaReporte.setAccountName(getAccountNameEquifaxDos(textoMinuscula,textoCuenta) );
+				cuentaReporte.setAccountNumber(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[0]),"reported") );
+				cuentaReporte.setAccountType(utilidades.getDatoHorizontal(textoCuenta, elementos[1]));
+				cuentaReporte.setAccountStatus(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[3]).replaceAll("-", ""),"debttocredit ratio"));
+				cuentaReporte.setBalance( utilidades.getDatoHorizontal(textoCuenta, elementos[7]));
+				cuentaReporte.setLimit(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[5],"account details"),"account type") );
+				cuentaReporte.setMonthlyPayment(utilidades.getDatoHorizontal(textoCuenta, elementos[15]) );
+				cuentaReporte.setPastDueAmount(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[8],"account details"),"date reported") );
+				cuentaReporte.setHighestBalance(utilidades.getDatoHorizontal(textoCuenta, elementos[4]) );
+				cuentaReporte.setTerms(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[6]),"term") );
+				cuentaReporte.setComments(utilidades.getDatoVertical(textoCuenta, elementos[11],"account details") );
+				cuentaReporte.setDateOpened(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta, elementos[2])));
+				cuentaReporte.setAccounttypeone(getTypeAccountNamePatronDos(cuentaReporte.getAccountName()));
+				cuentaReporte.setAccounttypetwo(getTypeAccount(textosTiposCuentas, textoCuenta, tagFinales,tiposCuentaDos));
+				cuentaReporte.setLoanType(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[10]),"date closed"));
+				cuentaReporte.setDateClosed(utilidades.getFechaFormatoMesDiaAño( utilidades.getDatoHorizontal(textoCuenta, elementos[12])));
+				cuentaReporte.setPaymentReceived(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[14]),"date of last"));
+				cuentaReporte.setOriginalCreditor(utilidades.getDatoHorizontal(textoCuenta, elementos[9]));
+				cuentaReporte.setLastActivity(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta, elementos[13]),"scheduled"));
+				cuentaReporte.setAccountName(cuentaReporte.getAccountName().replaceAll(cuentaReporte.getAccounttypeone()+"|)|(", "" ));
+				cuentaReporte.setCreditFileStatus(getCreditFileStatus(textoCuenta));
+				System.out.println("marica4");
 
 				//****** Se obtiene los datos de las cuentas que se encuentran en las tablas *******
 
@@ -633,7 +617,7 @@ public class ScrapingPDF {
 				int posicionInicialLinea = 0;
 
 
-				if (accountName.equalsIgnoreCase("pennymac loan services llc")) {
+				if (cuentaReporte.getAccountName().equalsIgnoreCase("pennymac loan services llc")) {
 
 					informacionCuentas = new HashMap<String,List<HistorialPago>>();
 
@@ -744,13 +728,8 @@ public class ScrapingPDF {
 					}
 
 				}
-
-				CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
-						accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-						monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-						comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-						lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,
-						informacionCuentas);
+				System.out.println("marica4");
+				cuentaReporte.setMesesCanceladosPorAno(informacionCuentas);
 
 				cuentasReporte.add(cuentaReporte);
 
@@ -759,7 +738,7 @@ public class ScrapingPDF {
 
 
 		} while (posicionInicialCuenta>0);
-
+		System.out.println("marica1");
 		//**************************** Se obtienen las cuentas inquiries ***************************************
 		int posicionInicialInquiries = textoMinuscula.indexOf("inquiries",posicionInicialConsumerStatements);
 		int posicionFinalInquiries = textoMinuscula.indexOf("public records",posicionInicialInquiries);
@@ -780,68 +759,94 @@ public class ScrapingPDF {
 						"No";
 
 
-					Matcher m = utilidades.getPatronDateInquiresPatrosDos().matcher(textoInquiries);
-					List<String> fechas = new ArrayList<String>();
-					int posicionFinalFecha = 0;
+			Matcher m = utilidades.getPatronDateInquiresPatrosDos().matcher(textoInquiries);
+			List<String> fechas = new ArrayList<String>();
+			int posicionFinalFecha = 0;
 
-					while (m.find()) 
+			while (m.find()) 
 
-						fechas.add(m.group().replaceAll("\n", ""));
+				fechas.add(m.group().replaceAll("\n", ""));
 
-					for (int i = 0; i < fechas.size(); i++) {
+			for (int i = 0; i < fechas.size(); i++) {
 
-						String inquiryDate = fechas.get(i).replaceAll(",", " ").trim();
-						String[] fechaInquieries = inquiryDate.split(" ");
+				String inquiryDate = fechas.get(i).replaceAll(",", " ").trim();
+				String[] fechaInquieries = inquiryDate.split(" ");
 
-						int posicionInicialFecha = textoInquiries.indexOf(fechas.get(i),posicionFinalFecha);
-						posicionFinalFecha = ((i+1) == fechas.size()) ? textoInquiries.length() : textoInquiries.indexOf(fechas.get(i+1),posicionInicialFecha + inquiryDate.length()); 
+				int posicionInicialFecha = textoInquiries.indexOf(fechas.get(i),posicionFinalFecha);
+				posicionFinalFecha = ((i+1) == fechas.size()) ? textoInquiries.length() : textoInquiries.indexOf(fechas.get(i+1),posicionInicialFecha + inquiryDate.length()); 
 
-						String textCuenta =textoInquiries.substring(posicionInicialFecha,posicionFinalFecha).replace(inquiryDate, "").trim();
+				String textCuenta =textoInquiries.substring(posicionInicialFecha,posicionFinalFecha).replace(inquiryDate, "").trim();
 
-						if (textCuenta.contains("soft inquiries"))
-							textCuenta = textCuenta.substring(0,textCuenta.indexOf("soft inquiries"));
-
-
-						if (!textCuenta.contains("page")) {
-
-							int posicionRetornoCarro = textCuenta.indexOf("\n") > 0 ? textCuenta.indexOf("\n") : 
-								textCuenta.indexOf("\r") > 0 ? textCuenta.indexOf("\r") : textCuenta.length();
-
-								String accountName = utilidades.eliminarRetornosCarro(textCuenta.substring(0,posicionRetornoCarro));
-								String comments = utilidades.eliminarRetornosCarro(textCuenta.replace(accountName,"")).replaceAll(" +", " ");
-								String inquieresType = textosInquieres[0].contains(textCuenta) ? "hard inquiries" :
-									textosInquieres[1].contains(textCuenta) ? "soft inquiries" :
-										"";	  
-
-								if (comments.contains(name))
-
-									comments = comments.substring(0,comments.indexOf(name));
-
-								for (String fecha : fechaInquieries) 
-
-									cuentasInquieries.add(new Inquiery(accountName, fecha, "", "", 
-											"", inquieresType,comments,"",""));
-						}
+				if (textCuenta.contains("soft inquiries"))
+					textCuenta = textCuenta.substring(0,textCuenta.indexOf("soft inquiries"));
 
 
-					}
+				if (!textCuenta.contains("page")) {
+
+					int posicionRetornoCarro = textCuenta.indexOf("\n") > 0 ? textCuenta.indexOf("\n") : 
+						textCuenta.indexOf("\r") > 0 ? textCuenta.indexOf("\r") : textCuenta.length();
+
+						String accountName = utilidades.eliminarRetornosCarro(textCuenta.substring(0,posicionRetornoCarro));
+						String comments = utilidades.eliminarRetornosCarro(textCuenta.replace(accountName,"")).replaceAll(" +", " ");
+						String inquieresType = textosInquieres[0].contains(textCuenta) ? "hard inquiries" :
+							textosInquieres[1].contains(textCuenta) ? "soft inquiries" :
+								"";	  
+
+						if (comments.contains(reporte.getName()))
+
+							comments = comments.substring(0,comments.indexOf(reporte.getName()));
+
+						for (String fecha : fechaInquieries) 
+
+							cuentasInquieries.add(new Inquiery(accountName, utilidades.getFechaFormatoMesDiaAño(fecha), "", "", 
+									"", inquieresType,comments,"",""));
+				}
 
 
-					String myhardcreditinquiries = "" + cuentasInquieries.size();
+			}
+System.out.println("marica");
 
-					//Se crea el reporte que se va ha insertar
-					Reporte reporte = new Reporte(ssn, name, patronEquifax.getCra(), employeer, opencreditcards, openretailcards, 
-							openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-							collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-							myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-							realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-							dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronDos");
+			reporte.setMyhardcreditinquiries("" + cuentasInquieries.size());
 
-					return generarJSON(reporte,cuentasReporte,cuentasInquieries,null);		
+			//Se obtiene las cuentas publicas
+			String[] tags = new String[]{"bankruptcies","status","judgments","collections"};
+			
+			for (int i = 0; i < 2; i++) {
+				
+				String textoCuentaPublic = textoMinuscula.substring( textoMinuscula.indexOf(tags[i]),textoMinuscula.indexOf(tags[i+1]));
+				int posicionReferenceInicial = textoMinuscula.indexOf("reference");
+				int posicionReferenceFinal = textoMinuscula.indexOf("reference") + 10;
+				
+				while (posicionReferenceInicial > 0) {
+					
+					if (posicionReferenceFinal < 0)
+						
+						posicionFinalConFormatoCuenta = textoCuentaPublic.length();
+					
+					String publicRecord = textoCuentaPublic.substring(posicionReferenceInicial,posicionReferenceFinal);
+					String accountName = "NO DEFIND";
+					String referenceNumber = "reference number " + utilidades.getDatoHorizontal(publicRecord, "number");
+					String status = utilidades.getDatoVertical(publicRecord, "status");
+					String filingDate = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(publicRecord, "filed"),"type");
+					String liability_amount = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(publicRecord, "liability"),"court");
+					String court = utilidades.getDatoHorizontal(publicRecord, "court");
+					String comments = utilidades.getDatoVertical(publicRecord, "comments");
+					
+					cuentasPublicas.add(new PublicAccount(accountName, filingDate, "", "", liability_amount, "", 
+							referenceNumber, court, "", status, "", comments));
+					
+				} 
+				
+				
+				
+			}
+			
+
+			return generarJSON(reporte,cuentasReporte,cuentasInquieries,cuentasPublicas);		
 
 	}
 
-	
+
 	/**
 	 * Scraper equifax patron tres
 	 * @param archivo
@@ -884,12 +889,12 @@ public class ScrapingPDF {
 		String overallcreditusage = "";
 
 		//Se crea el reporte que se va ha insertar
-		Reporte reporte = new Reporte(ssn, name, patronEquifax.getCra(), employeer, opencreditcards, openretailcards, 
+		/*Reporte reporte = new Reporte(ssn, name, patronEquifax.getCra(), employeer, opencreditcards, openretailcards, 
 				openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
 				collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
 				myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
 				realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronTres");
+				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronTres");*/
 
 
 		int posicionFinal = 0;
@@ -1007,14 +1012,14 @@ public class ScrapingPDF {
 						String creditusagedescription = "";
 
 
-/*						CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
+						/*						CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
 								accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
 								monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
 								comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
 								lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription);*/
 
 
-						
+
 
 						//Se inserta el historico del balance
 						for (String lineaHistorico : historicoBalance) {
@@ -1031,7 +1036,7 @@ public class ScrapingPDF {
 							String typeloan = !utilidades.getValor(columnas,7).isEmpty() ? utilidades.getValor(columnas,7) : 
 								utilidades.getValor(columnas,6).equals("auto") ? "auto" : "";
 
-							
+
 						}
 
 				}
@@ -1058,37 +1063,17 @@ public class ScrapingPDF {
 		List<CuentaReporte> cuentasReporte = new ArrayList<CuentaReporte>();
 		List<Inquiery> cuentasInquieries = new ArrayList<Inquiery>();
 
-		String ssn = getSSN(textoMinuscula);
-		String name = utilidades.getDatoVertical(textoMinuscula,patronExperian.getTagNamePatronUno()).
-				replaceAll("[0-9]+", "");
-		String employeer[] = new String[]{""};
-		String opencreditcards = "";
-		String openretailcards = "";
-		String openrealrstateloans = "";
-		String openinstallmentloans = "";
-		String totalopenaccounts = "";
-		String accountseverlate = "";
-		String collectionsaccounts = "";
-		String averageaccountage = "";
-		String oldestaccount = "";
-		String newestaccount = "";
-		String creditdebt = "";
-		String totalcredit = "";
-		String creditandretailcarddebt = "";
-		String realestatedebt = "";
-		String installmentloansdebt = "";
-		String collectionsdebt = "";
-		String totaldebt = "";
-
-		String mypublicrecords = "";
-		String creditscore = "";
+		Reporte reporte = new Reporte();
+		reporte.setSsn(getSSN(textoMinuscula));
+		reporte.setCra(patronExperian.getCra());
+		reporte.setEmployeer(null);
+		reporte.setName(utilidades.getDatoVertical(textoMinuscula,patronExperian.getTagNamePatronUno()).replaceAll("[0-9]+", ""));
+		reporte.setAddress(getAddressExperianPatronUno(utilidades.getColumnaPDFPrimeraHoja(document,0,320),patronTransunion.getTagAddress()));
+		reporte.setBirthyear(utilidades.getLineaAnterior(textoMinuscula,"year of birth"));
+		reporte.setPatron("PatronUno");
 
 		String primeraLinea = utilidades.getLineas(textoMinuscula,1);
-		String dateofreport = utilidades.getFechaFormatoMesDiaAño(primeraLinea.substring(0,primeraLinea.indexOf(" ")),"/",true);
-
-		String address[] = getAddressExperianPatronUno(utilidades.getColumnaPDFPrimeraHoja(document,0,320),patronTransunion.getTagAddress());
-		String birthyear = utilidades.getLineaAnterior(textoMinuscula,"year of birth");
-		String overallcreditusage = "";
+		reporte.setDateofreport(utilidades.getFechaFormatoMesDiaAño(primeraLinea.substring(0,primeraLinea.indexOf(" ")),"/",true));
 
 
 
@@ -1209,47 +1194,38 @@ public class ScrapingPDF {
 
 				//Se obtiene los datos de la columna una
 				String textoCuentaColumnaUno = columnaUno.substring(posicionInicialCuentaColumnaUno,posicionFinalCuentaUno);
-				String accountName = utilidades.getDatoVertical(textoCuentaColumnaUno,elementos[0],2);
+
+				CuentaReporte cuentaReporte = new CuentaReporte();
+				cuentaReporte.setAccountName( utilidades.getDatoVertical(textoCuentaColumnaUno,elementos[0],2));
 
 				//Se obtiene los datos de la columna dos
 				String textoCuentaColumnaDos = columnaDos.substring(posicionInicialCuentaColumnaDos,posicionFinalCuentaDos);
-				String accountNumber = utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[1]);
-				String accountType = utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[6]);
-				String terms = utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[10]);
+				cuentaReporte.setAccountNumber(utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[1]));
+				cuentaReporte.setAccountType(utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[6]));
+				cuentaReporte.setTerms(utilidades.getDatoVertical(textoCuentaColumnaDos,elementos[10]));
 
 				//Se obtiene los datos de la columna tres
 				String textoCuentaColumnaTres = columnaTres.substring(posicionInicialCuentaColumnaTres,posicionFinalCuentaTres);
-				String balance = utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[2],2);
-				String limit = utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[7],3);
-				String highestBalance = utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[9]);
-				String monthlyPayment = utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[12]);
-				String paymentReceived = utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[14]);
+				cuentaReporte.setPaymentReceived(utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[14]));
+				cuentaReporte.setBalance(utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[2],2));
+				cuentaReporte.setLimit(utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[7],3));
+				cuentaReporte.setMonthlyPayment(utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[12]) );
+				cuentaReporte.setHighestBalance(utilidades.getDatoVertical(textoCuentaColumnaTres,elementos[9]) );
+
+
 
 				//Se obtiene los datos de la columna tres
 				String textoCuentaColumnaCuatro = columnaCuatro.substring(posicionInicialCuentaColumnaCuatro,posicionFinalCuentaCuatro);
-				String dateOpened = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[3]),"/",true);
-				String statusUpdated = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[8]),"/",true);
-				String responsibility = utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[10]);
+				cuentaReporte.setStatusUpdated(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[8]),"/",true));
+				cuentaReporte.setResponsibility(utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[10]));
+				cuentaReporte.setDateOpened(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuentaColumnaCuatro,elementos[3]),"/",true));
 
 
 				//Se obtiene los datos de la columna tres
 				String textoCuentaColumnaCinco = columnaCinco.substring(posicionInicialCuentaColumnaCinco,posicionFinalCuentaCinco);
-				String accountStatus = utilidades.getDatoVertical(textoCuentaColumnaCinco,elementos[4]);
-				String comments = utilidades.getDatoVertical(textoCuentaColumnaCinco,elementos[11]);
-
-				String paymentStatus = "";
-				String balanceUpdated = "";
-				String pastDueAmount = "";
-				String yourStatement = "";
-				String loanType = "";
-				String dateClosed = "";
-				String statusDetail = "";
-				String originalCreditor = "";
-				String lastActivity = "";
-				String accounttypeone = "";
-				String accounttypetwo = getTypeAccount(textosTiposCuentas, textoCuenta, tagFinales,tiposCuenta);
-				String creditusage = "";
-				String creditusagedescription = "";
+				cuentaReporte.setAccountStatus(utilidades.getDatoVertical(textoCuentaColumnaCinco,elementos[4]));
+				cuentaReporte.setComments(utilidades.getDatoVertical(textoCuentaColumnaCinco,elementos[11]) );
+				cuentaReporte.setAccounttypetwo(getTypeAccount(textosTiposCuentas, textoCuenta, tagFinales,tiposCuenta));
 
 
 				//******************************* Historico de balance **************************************
@@ -1305,13 +1281,7 @@ public class ScrapingPDF {
 				posicionInicioBusquedaTagColumnaCinco = posicionFinalCuentaCinco;
 				posicionInicioBusquedaTagTextoCuenta = posicionFinalTextoCuenta;
 
-				CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
-						accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-						monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-						comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-						lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,
-						mesesCanceladosPorAno);
-
+				cuentaReporte.setMesesCanceladosPorAno(mesesCanceladosPorAno);
 				cuentasReporte.add(cuentaReporte);
 
 			}
@@ -1360,7 +1330,7 @@ public class ScrapingPDF {
 					String accountInquiriesColumnaUno = columnaUno.substring(posicionInicialInquiriesColumnaUna,posicionFinalInquiriesColumnaUna);
 					String accountInquiriesColumnaDos = columnaDos.substring(posicionInicialInquiriesColumnaDos,posicionFinalInquiriesColumnaDos);
 
-					String accountName = utilidades.getDatoVertical(accountInquiriesColumnaUno, patronExperian.getTagAccountName()).replaceAll(name, "");
+					String accountName = utilidades.getDatoVertical(accountInquiriesColumnaUno, patronExperian.getTagAccountName()).replaceAll(reporte.getName(), "");
 
 					int posicion = accountInquiriesColumnaUno.indexOf(accountName);
 					String contactInformation = "";
@@ -1391,16 +1361,7 @@ public class ScrapingPDF {
 
 		}
 
-		String myhardcreditinquiries = "" + cuentasInquieries.size();
-
-		//Se crea el reporte que se va ha insertar
-		Reporte reporte = new Reporte(ssn, name, patronExperian.getCra(), employeer, opencreditcards, openretailcards, 
-				openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-				collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-				myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-				realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronUno");
-
+		reporte.setMyhardcreditinquiries("" + cuentasInquieries.size());
 
 		return generarJSON(reporte,cuentasReporte,cuentasInquieries,null);	
 	}
@@ -1419,42 +1380,22 @@ public class ScrapingPDF {
 		String[] tiposCuenta = {"adverse","satisfactory","inquiries","promocionalinquiries","reviewinquiries"};
 		String textoPublic = textoMinuscula;
 
-
+System.out.println(textoMinuscula);
 		List<CuentaReporte> cuentasReporte = new ArrayList<CuentaReporte>();
 		List<Inquiery> cuentasInquieries = new ArrayList<Inquiery>();
 		List<PublicAccount> publicAccounts = new ArrayList<PublicAccount>();
 
-		String ssn = getSSN(textoMinuscula);
-		String name = utilidades.getDatoVertical(textoMinuscula, "names:");
-		String employeer[] = new String[]{""};
-		String opencreditcards = "";
-		String openretailcards = "";
-		String openrealrstateloans = "";
-		String openinstallmentloans = "";
-		String totalopenaccounts = "";
-		String accountseverlate = "";
-		String collectionsaccounts = "";
-		String averageaccountage = "";
-		String oldestaccount = "";
-		String newestaccount = "";
-		String creditdebt = "";
-		String totalcredit = "";
-		String creditandretailcarddebt = "";
-		String realestatedebt = "";
-		String installmentloansdebt = "";
-		String collectionsdebt = "";
-		String totaldebt = "";
-		String mypublicrecords = "";
-		String creditscore = "";
+		Reporte reporte = new Reporte();
+		reporte.setSsn(getSSN(textoMinuscula));
+		reporte.setCra(patronExperian.getCra());
 
-		String dateofreport = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoMinuscula, "report date").
-				replaceAll("your report number is", "").trim());
+		reporte.setName(utilidades.getDatoVertical(textoMinuscula, "names:"));
+		reporte.setDateofreport(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoMinuscula, "report date").
+				replaceAll("your report number is", "").trim()));
+		reporte.setAddress(getAddressExperianPatronDos(textoMinuscula,"address:"));
+		reporte.setBirthyear(utilidades.getDatoVertical(textoMinuscula,"year of birth"));
 
-		String address[] = getAddressExperianPatronDos(textoMinuscula,"address:");
-		String birthyear = utilidades.getDatoVertical(textoMinuscula,"year of birth");
-		String overallcreditusage = "";
-
-
+		reporte.setPatron("PatronDos");
 
 
 		if (poseeCuentas) {
@@ -1521,102 +1462,81 @@ public class ScrapingPDF {
 						if (posicionInicialAccountName>=0 && posicionFinalAccountName > posicionInicialAccountName) 
 							accountName = utilidades.eliminarRetornosCarro(textoMinuscula.substring(posicionInicialAccountName,posicionFinalAccountName));
 
-
-						String accountStatus = utilidades.getDatoVertical(textoCuenta, "status").replaceAll("date|opened|:", "");
-						String statusDetail = utilidades.getDatoVertical(textoCuenta, "status details");
-						String dateOpened = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuenta,elementos[3]),"/",true);
-						String accountType = utilidades.getDatoVertical(textoCuenta,elementos[6]);
-						String statusUpdated = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuenta,elementos[8]),"/",true);
-						String paymentReceived = utilidades.getDatoVertical(textoCuenta,elementos[14]);
-
-						String balance = utilidades.getDatoVertical(textoCuenta,elementos[2],2);
-
-						String limit = utilidades.getDatoVertical(textoCuenta,"credit limit/original amount");
-
-						String highestBalance = utilidades.getDatoVertical(textoCuenta,elementos[9]);
-
-						String monthlyPayment = utilidades.getDatoVertical(textoCuenta,"monthly payment");
-						String responsibility = utilidades.getDatoVertical(textoCuenta,elementos[10]);
-						String terms = utilidades.getDatoVertical(textoCuenta,elementos[10]);
-
-						String paymentStatus = "";
-						String balanceUpdated = "";
-						String pastDueAmount = "";
-
-
-						String yourStatement = textoCuenta.contains("payment history")  &&  textoCuenta.contains("statement") ?
+						CuentaReporte cuentaReporte = new CuentaReporte();
+						cuentaReporte.setAccountName(accountName);
+						cuentaReporte.setAccountNumber(accountNumber);
+						cuentaReporte.setLoanType(utilidades.getDatoVertical(textoCuenta,"last reported"));
+						cuentaReporte.setResponsibility(utilidades.getDatoVertical(textoCuenta,elementos[10]));
+						cuentaReporte.setStatusDetail(utilidades.getDatoVertical(textoCuenta, "status details"));
+						cuentaReporte.setAccountType(utilidades.getDatoVertical(textoCuenta,elementos[6]));
+						cuentaReporte.setAccountStatus(utilidades.getDatoVertical(textoCuenta, "status").replaceAll("date|opened|:", ""));
+						cuentaReporte.setPaymentStatus( utilidades.getDatoVertical(textoCuenta,elementos[14]));
+						cuentaReporte.setStatusUpdated(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuenta,elementos[8]),"/",true));
+						cuentaReporte.setBalance(utilidades.getDatoVertical(textoCuenta,elementos[2],2));
+						cuentaReporte.setLimit(utilidades.getDatoVertical(textoCuenta,"credit limit/original amount"));
+						cuentaReporte.setMonthlyPayment(utilidades.getDatoVertical(textoCuenta,"monthly payment"));
+						cuentaReporte.setHighestBalance(utilidades.getDatoVertical(textoCuenta,elementos[9]));
+						cuentaReporte.setTerms( utilidades.getDatoVertical(textoCuenta,elementos[10]));
+						cuentaReporte.setYourStatement(textoCuenta.contains("payment history")  &&  textoCuenta.contains("statement") ?
 								utilidades.eliminarRetornosCarro(textoCuenta.substring(textoCuenta.indexOf("statement")+9,
 										textoCuenta.indexOf("payment history"))) :
-											utilidades.getDatoVertical(textoCuenta,"your statement");
-								String loanType = "";
-								String dateClosed = "";
-								String originalCreditor = "";
-								String comments = utilidades.getDatoHorizontal(textoCuenta,"comment");
-								String lastActivity = utilidades.getDatoVertical(textoCuenta,"last reported");
-								String accounttypeone = "";
-								String accounttypetwo = getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuenta);
-								String creditusage = "";
-								String creditusagedescription = "";
+											utilidades.getDatoVertical(textoCuenta,"your statement") );
+						cuentaReporte.setComments(utilidades.getDatoHorizontal(textoCuenta,"comment") );
+						cuentaReporte.setDateOpened(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoVertical(textoCuenta,elementos[3]),"/",true));
+						cuentaReporte.setAccounttypetwo(getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuenta));
 
 
+						//******************************* Historico de balance **************************************
+						Map<String, List<HistorialPago>> mesesCanceladosPorAno = new HashMap<String, List<HistorialPago>>();
+						int posicionInicioBalanceHistorico = textoCuenta.indexOf("account balance");
+						int posicionFinalBalanceHistorico = textoCuenta.indexOf("the original amount");
 
-								//******************************* Historico de balance **************************************
-								Map<String, List<HistorialPago>> mesesCanceladosPorAno = new HashMap<String, List<HistorialPago>>();
-								int posicionInicioBalanceHistorico = textoCuenta.indexOf("account balance");
-								int posicionFinalBalanceHistorico = textoCuenta.indexOf("the original amount");
+						if (posicionFinalBalanceHistorico < 0)
+							posicionFinalBalanceHistorico = textoCuenta.indexOf("account history",posicionInicioBalanceHistorico);
 
-								if (posicionFinalBalanceHistorico < 0)
-									posicionFinalBalanceHistorico = textoCuenta.indexOf("account history",posicionInicioBalanceHistorico);
+						if (posicionFinalBalanceHistorico < 0)
+							posicionFinalBalanceHistorico = textoCuenta.indexOf("between",posicionInicioBalanceHistorico);
 
-								if (posicionFinalBalanceHistorico < 0)
-									posicionFinalBalanceHistorico = textoCuenta.indexOf("between",posicionInicioBalanceHistorico);
+						if (posicionFinalBalanceHistorico < 0)
+							posicionFinalBalanceHistorico = textoCuenta.length();
 
-								if (posicionFinalBalanceHistorico < 0)
-									posicionFinalBalanceHistorico = textoCuenta.length();
-
-								if (posicionInicioBalanceHistorico > 0 && posicionInicioBalanceHistorico < posicionFinalBalanceHistorico) {
-									String balanceHistorico = textoCuenta.substring(posicionInicioBalanceHistorico,
-											posicionFinalBalanceHistorico);
-									balanceHistorico = balanceHistorico.replace(utilidades.getLineas(balanceHistorico, 1), "");
+						if (posicionInicioBalanceHistorico > 0 && posicionInicioBalanceHistorico < posicionFinalBalanceHistorico) {
+							String balanceHistorico = textoCuenta.substring(posicionInicioBalanceHistorico,
+									posicionFinalBalanceHistorico);
+							balanceHistorico = balanceHistorico.replace(utilidades.getLineas(balanceHistorico, 1), "");
 
 
-									String[] filasBalance = balanceHistorico.split("\n");
+							String[] filasBalance = balanceHistorico.split("\n");
 
-									for (String filas : filasBalance) {
+							for (String filas : filasBalance) {
 
-										int posicionPunto = filas.indexOf(":");
+								int posicionPunto = filas.indexOf(":");
 
-										if (posicionPunto > 0) {
+								if (posicionPunto > 0) {
 
-											String date = filas.substring(0,posicionPunto);
-											String columnas[] = filas.substring(posicionPunto+1).split("/");
-											String mes = date.substring(0,3);
-											String año = date.substring(3);
+									String date = filas.substring(0,posicionPunto);
+									String columnas[] = filas.substring(posicionPunto+1).split("/");
+									String mes = date.substring(0,3);
+									String año = date.substring(3);
 
-											if (columnas.length == 4) {
+									if (columnas.length == 4) {
 
-												mesesCanceladosPorAno.put(año, new ArrayList<HistorialPago>());
+										mesesCanceladosPorAno.put(año, new ArrayList<HistorialPago>());
 
-												List<HistorialPago> meses = mesesCanceladosPorAno.get(año);
-												meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "balance", columnas[0].trim()));
-												meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "payment received", columnas[1].trim()));
-												meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "scheduled payment amount", columnas[2].trim()));
-												meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "actual amount paid", columnas[3].trim()));
+										List<HistorialPago> meses = mesesCanceladosPorAno.get(año);
+										meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "balance", columnas[0].trim()));
+										meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "payment received", columnas[1].trim()));
+										meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "scheduled payment amount", columnas[2].trim()));
+										meses.add(new HistorialPago(mes, año+"-"+utilidades.getNumeroMes(mes), "actual amount paid", columnas[3].trim()));
 
-											}
-
-										}
 									}
+
 								}
+							}
+						}
 
-								CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
-										accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-										monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-										comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-										lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,
-										mesesCanceladosPorAno);
-
-								cuentasReporte.add(cuentaReporte);
+						cuentaReporte.setMesesCanceladosPorAno(mesesCanceladosPorAno);
+						cuentasReporte.add(cuentaReporte);
 
 					}
 
@@ -1767,8 +1687,8 @@ public class ScrapingPDF {
 							String dateFiled = utilidades.getLineaAnterior(textoCuenta,"date resolved");
 
 							publicAccounts.add(new PublicAccount(accountName, dateFiled, dateResolved,"",
-									                             liabilityAmount,"",identicationNumber,"",
-									                             "",status,statusDetails,responsibility));
+									liabilityAmount,"",identicationNumber,"",
+									"",status,statusDetails,responsibility));
 
 
 							posicionInicialCuenta = posicionFinalCuenta + 8;
@@ -1784,16 +1704,12 @@ public class ScrapingPDF {
 			}
 
 		}
+		
+		//Se obtienen las cuentas publicas
+		
+		
 
-		String myhardcreditinquiries = "" + cuentasInquieries.size();
-
-		//Se crea el reporte que se va ha insertar
-		Reporte reporte = new Reporte( ssn, name, patronExperian.getCra(), employeer, opencreditcards, openretailcards, 
-				openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-				collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-				myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-				realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronDos");
+		reporte.setMyhardcreditinquiries( "" + cuentasInquieries.size());
 
 
 		return generarJSON(reporte, cuentasReporte, cuentasInquieries, publicAccounts);
@@ -1816,44 +1732,14 @@ public class ScrapingPDF {
 		List<CuentaReporte> cuentasReporte = new ArrayList<CuentaReporte>();
 		List<Inquiery> cuentasInquieries = new ArrayList<Inquiery>();
 
-
-		String ssn = getSSN(textoMinuscula);
-		String name = utilidades.getDatoVertical(textoMinuscula,"prepared for");
-		String employeer[] = new String[]{""};
-		String opencreditcards = "";
-		String openretailcards = "";
-		String openrealrstateloans = "";
-		String openinstallmentloans = "";
-		String totalopenaccounts = "";
-		String accountseverlate = "";
-		String collectionsaccounts = "";
-		String averageaccountage = "";
-		String oldestaccount = "";
-		String newestaccount = "";
-		String creditdebt = "";
-		String totalcredit = "";
-		String creditandretailcarddebt = "";
-		String realestatedebt = "";
-		String installmentloansdebt = "";
-		String collectionsdebt = "";
-		String totaldebt = "";
-		String myhardcreditinquiries = "";
-		String mypublicrecords = "";
-		String creditscore = "";
-
-		String dateofreport = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula, "date generated"));
-		String address[] = getAddressExperianPatronCinco(textoMinuscula,patronExperian.getTagAddressPatronCinco());
-		String birthyear = utilidades.getDatoVertical(textoConFormatoMinuscula.replaceAll("year\\s+of\\s+birth", "year of birth"),"year of birth");
-		String overallcreditusage = "";
-
-		//Se crea el reporte que se va ha insertar
-		Reporte reporte = new Reporte(ssn, name, patronExperian.getCra(), employeer, opencreditcards, openretailcards, 
-				openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-				collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-				myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-				realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronCinco");
-
+		Reporte reporte = new Reporte();
+		reporte.setSsn(getSSN(textoMinuscula));
+		reporte.setCra(patronExperian.getCra());
+		reporte.setName(utilidades.getDatoVertical(textoMinuscula,"prepared for"));
+		reporte.setDateofreport(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula, "date generated")));
+		reporte.setAddress(getAddressExperianPatronCinco(textoMinuscula,patronExperian.getTagAddressPatronCinco()));
+		reporte.setBirthyear(utilidades.getDatoVertical(textoConFormatoMinuscula.replaceAll("year\\s+of\\s+birth", "year of birth"),"year of birth"));
+		reporte.setPatron("PatronCinco");
 
 
 		if (poseeCuentas) {
@@ -1876,36 +1762,22 @@ public class ScrapingPDF {
 
 					String textoCuenta = textoMinuscula.substring(posicionInicialCuenta,posicionFinalCuenta);
 
-					String accountName = getAccountNamePatronCinco(textoCuenta,elementos[0]);
-					String accountNumber = utilidades.getDatoHorizontal(textoCuenta,elementos[1]);
-					String accountType =  utilidades.getDatoHorizontal(textoCuenta,elementos[2]);
-					String accountStatus =  utilidades.getDatoHorizontal(textoCuenta,elementos[4]);
-
-					String paymentStatus = "";
-					String statusUpdated =  utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[7]),"/",true);
-					String balance =    utilidades.getDatoHorizontal(textoCuenta,elementos[5]);
-					String balanceUpdated =  utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[12]),"/",true);
-					String limit =  utilidades.getDatoHorizontal(textoCuenta,elementos[6]);
-					String monthlyPayment =  utilidades.getDatoHorizontal(textoCuenta,elementos[13]);
-					String pastDueAmount = "";
-					String highestBalance =  utilidades.getDatoHorizontal(textoCuenta,elementos[8]);
-
-					String terms =  utilidades.getDatoHorizontal(textoCuenta,elementos[9]);
-					String responsibility =  utilidades.getDatoHorizontal(textoCuenta,elementos[10]);
-					String yourStatement = "";
-					String comments = "";
-					String dateOpened =  utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[3]),"/",true);
-					String loanType = "";
-					String dateClosed = "";
-					String statusDetail = "";
-					String paymentReceived =  utilidades.getDatoHorizontal(textoCuenta,elementos[11]);
-					String originalCreditor = "";
-					String lastActivity = "";
-					String accounttypeone = "";
-					String accounttypetwo = textoCuenta.contains("negative") ? "Potentially negative" : "Potentially positive";
-					String creditusage = "";
-					String creditusagedescription = "";
-
+					CuentaReporte cuentaReporte = new CuentaReporte();
+					cuentaReporte.setAccountName(getAccountNamePatronCinco(textoCuenta,elementos[0]));
+					cuentaReporte.setAccountNumber(utilidades.getDatoHorizontal(textoCuenta,elementos[1]));
+					cuentaReporte.setAccountType(utilidades.getDatoHorizontal(textoCuenta,elementos[2]));
+					cuentaReporte.setAccountStatus(utilidades.getDatoHorizontal(textoCuenta,elementos[4]) );
+					cuentaReporte.setPaymentReceived(utilidades.getDatoHorizontal(textoCuenta,elementos[11]));
+					cuentaReporte.setAccounttypetwo(textoCuenta.contains("negative") ? "Potentially negative" : "Potentially positive");
+					cuentaReporte.setStatusUpdated(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[7]),"/",true));
+					cuentaReporte.setBalance(utilidades.getDatoHorizontal(textoCuenta,elementos[5]) );
+					cuentaReporte.setBalanceUpdated( utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[12]),"/",true));
+					cuentaReporte.setLimit( utilidades.getDatoHorizontal(textoCuenta,elementos[6]));
+					cuentaReporte.setMonthlyPayment(utilidades.getDatoHorizontal(textoCuenta,elementos[13]) );
+					cuentaReporte.setHighestBalance(utilidades.getDatoHorizontal(textoCuenta,elementos[8]) );
+					cuentaReporte.setTerms(utilidades.getDatoHorizontal(textoCuenta,elementos[9]) );
+					cuentaReporte.setDateOpened(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoCuenta,elementos[3]),"/",true));
+					cuentaReporte.setResponsibility(utilidades.getDatoHorizontal(textoCuenta,elementos[10]));
 
 
 					//************************* Se obtiene el balance historico ***************************************************
@@ -1955,12 +1827,7 @@ public class ScrapingPDF {
 
 					} while (posicionFinal > 0);
 
-					CuentaReporte cuentaReporte = new CuentaReporte( accountName, accountNumber,
-							accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-							monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-							comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-							lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,mesesCanceladosPorAno);
-
+					
 					cuentasReporte.add(cuentaReporte);
 				}
 
@@ -2086,7 +1953,7 @@ public class ScrapingPDF {
 	private String scrapearTransunionPatronUno(String textoMinuscula, String textoMinusculaConFormato,PDDocument document,
 			boolean poseeCuentas) throws IOException {
 
-		
+
 		String[] elementos = patronTransunion.getElementosAContenerTextoRepetidamente();
 		String[] elementosReporte = patronTransunion.getElementosAdicionalesPatronGenerico();
 		String[] tiposCuenta = {"adverse","satisfactory","inquiries","promocionalinquiries","reviewinquiries"};
@@ -2097,33 +1964,16 @@ public class ScrapingPDF {
 
 		//****************** Se definen los datos del reporte ****************************************************
 
-		String ssn = getSSN(textoMinuscula);
-		String name = utilidades.getDatoHorizontal(textoMinuscula,patronTransunion.getTagName());
-		String employeer[] = getNombreEmpleadorTransunion(textoMinuscula,"employer");
-		String opencreditcards = "";
-		String openretailcards = "";
-		String openrealrstateloans = "";
-		String openinstallmentloans = "";
-		String totalopenaccounts = "";
-		String accountseverlate = "";
-		String collectionsaccounts = "";
-		String averageaccountage = "";
-		String oldestaccount = "";
-		String newestaccount = "";
-		String creditdebt = "";
-		String totalcredit = "";
-		String creditandretailcarddebt = "";
-		String realestatedebt = "";
-		String installmentloansdebt = "";
-		String collectionsdebt = "";
-		String totaldebt = "";
-		String mypublicrecords = "";
-		String creditscore = "";
+		Reporte reporte = new Reporte();
+		reporte.setSsn(getSSN(textoMinuscula));
+		reporte.setCra(patronTransunion.getCra());
+		reporte.setEmployeer(getNombreEmpleadorTransunion(textoMinuscula,"employer"));
+		reporte.setName(utilidades.getDatoHorizontal(textoMinuscula,patronTransunion.getTagName()));
+		reporte.setDateofreport(utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[1]),"/",true));
+		reporte.setAddress(getAddressTransunionPatronUno(textoMinuscula,patronTransunion.getTagAddress()));
+		reporte.setBirthyear(utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[0]));
+		reporte.setPatron("PatronUno");
 
-		String dateofreport = utilidades.getFechaFormatoMesDiaAño(utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[1]),"/",true);
-		String address[] = getAddressTransunionPatronUno(textoMinuscula,patronTransunion.getTagAddress());
-		String birthyear = utilidades.getDatoHorizontal(textoMinuscula,elementosReporte[0]);
-		String overallcreditusage = "";
 
 
 		//****************** Se definen los datos de la cuenta ****************************************************
@@ -2191,37 +2041,25 @@ public class ScrapingPDF {
 					String textoCuenta = textoMinuscula.substring(posicionInicial,posicionFinal);
 					String textoCuentaConFormato = textoMinusculaConFormato.substring(posicionInicialConFormato,posicionFinalConFormato);
 
-					String accountName = getAccountNameTransunion(textoMinuscula, numeroCuentas.get(i));
-					String accountNumber = numeroCuentas.get(i);
-
-					String accountType = utilidades.getDatoHorizontal(textoCuenta,elementos[2]);
-					String accountStatus = "";
-					String paymentStatus = utilidades.getDatoHorizontal(textoCuenta,elementos[12]);
-					String statusUpdated = utilidades.getDatoHorizontal(textoCuenta,elementos[5]);
-					String balance = getBalanceTransunion(textoCuenta) ?  utilidades.getDatoHorizontal(textoCuenta,elementos[4]).replaceAll(":|$", "").trim() : "";
-					String balanceUpdated = "";
-
-					String limit = utilidades.getDatoHorizontal(textoCuenta,elementos[10]);
-					String monthlyPayment = "";
-					String pastDueAmount = utilidades.getDatoHorizontal(textoCuenta,elementos[11]);
-					String highestBalance = utilidades.getDatoHorizontal(textoCuenta,elementos[8]);
-					String terms = utilidades.getDatoHorizontal(textoCuenta,elementos[13]);
-					String responsibility = utilidades.getDatoHorizontal(textoCuenta,elementos[1]);
-					String yourStatement = "";
-
-					String comments = "";
-					String dateOpened = utilidades.getDatoHorizontal(textoCuenta,elementos[0]);
-					String loanType = utilidades.getDatoHorizontal(textoCuenta,elementos[3]);
-					String dateClosed = utilidades.getDatoHorizontal(textoCuenta,elementos[14]);
-					String statusDetail = "";
-					String paymentReceived = utilidades.getDatoHorizontal(textoCuenta,elementos[6]);
-					String originalCreditor = utilidades.getDatoHorizontal(textoCuenta,elementos[9]);
-					String lastActivity = "";
-					String accounttypeone = "";
-					String accounttypetwo = getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuenta);
-					String creditusage = "";
-					String creditusagedescription = "";
-
+					
+					CuentaReporte cuentaReporte = new CuentaReporte();
+					cuentaReporte.setAccountName(getAccountNameTransunion(textoMinuscula, numeroCuentas.get(i)) );
+					cuentaReporte.setAccountType(utilidades.getDatoHorizontal(textoCuenta,elementos[2]) );
+					cuentaReporte.setPaymentStatus(utilidades.getDatoHorizontal(textoCuenta,elementos[12]) );
+					cuentaReporte.setStatusUpdated(utilidades.getDatoHorizontal(textoCuenta,elementos[5]));
+					cuentaReporte.setBalance(getBalanceTransunion(textoCuenta) ?  utilidades.getDatoHorizontal(textoCuenta,elementos[4]).replaceAll(":|$", "").trim() : "");
+					cuentaReporte.setPaymentReceived(utilidades.getDatoHorizontal(textoCuenta,elementos[6]));
+					cuentaReporte.setLimit( utilidades.getDatoHorizontal(textoCuenta,elementos[10]));
+					cuentaReporte.setPastDueAmount(utilidades.getDatoHorizontal(textoCuenta,elementos[11]) );
+					cuentaReporte.setHighestBalance(utilidades.getDatoHorizontal(textoCuenta,elementos[8]) );
+					cuentaReporte.setTerms(utilidades.getDatoHorizontal(textoCuenta,elementos[13]) );
+					cuentaReporte.setResponsibility(utilidades.getDatoHorizontal(textoCuenta,elementos[1]) );
+					cuentaReporte.setDateOpened(utilidades.getDatoHorizontal(textoCuenta,elementos[0]));
+					cuentaReporte.setDateClosed(utilidades.getDatoHorizontal(textoCuenta,elementos[14]));
+					cuentaReporte.setOriginalCreditor(utilidades.getDatoHorizontal(textoCuenta,elementos[9]));
+					cuentaReporte.setAccounttypetwo(getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuenta));
+					cuentaReporte.setLoanType(utilidades.getDatoHorizontal(textoCuenta,elementos[3]));
+				
 
 					//************** Se obtiene los datos de la tabla de cada cuenta ************************************ 
 					boolean sw = false; 
@@ -2255,12 +2093,7 @@ public class ScrapingPDF {
 
 					}
 
-					CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
-							accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-							monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-							comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-							lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,null);
-
+				
 					cuentasReporte.add(cuentaReporte);
 
 				}
@@ -2278,17 +2111,7 @@ public class ScrapingPDF {
 		getAccountsInquieriesTransunionPatronUno(textosTiposCuentas[3],"requested on","promotional inquiries",cuentasInquieries);
 		getAccountsInquieriesTransunionPatronUno(textosTiposCuentas[4],"requested on","account review inquiries",cuentasInquieries);
 
-		String myhardcreditinquiries = "" + cuentasInquieries.size();
-
-		//Se crea el reporte que se va ha insertar
-		Reporte reporte = new Reporte(ssn, name, patronTransunion.getCra(), employeer, opencreditcards, openretailcards, 
-				openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-				collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-				myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-				realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-				dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronUno");
-
-
+		reporte.setMyhardcreditinquiries("" + cuentasInquieries.size());
 
 		return generarJSON(reporte, cuentasReporte, cuentasInquieries, null);
 
@@ -2312,43 +2135,16 @@ public class ScrapingPDF {
 			//*************************** Se definen los datos del reporte ****************************************************
 			String[] tiposCuentaCuantro = {"adversas","satisfactorias"};
 
-			String ssn = getSSN(textoMinuscula);
-			String name = utilidades.getDatoHorizontal(textoMinuscula,patronTransunion.getTagNamePatronTres());
-			String employeer[] = getNombreEmpleadorTransunionPatronTres(textoMinuscula,patronTransunion.getTagNamePatronTres());
-			String opencreditcards = "";
-			String openretailcards = "";
-			String openrealrstateloans = "";
-			String openinstallmentloans = "";
-			String totalopenaccounts = "";
-			String accountseverlate = "";
-			String collectionsaccounts = "";
-			String averageaccountage = "";
-			String oldestaccount = "";
-			String newestaccount = "";
-			String creditdebt = "";
-			String totalcredit = "";
-			String creditandretailcarddebt = "";
-			String realestatedebt = "";
-			String installmentloansdebt = "";
-			String collectionsdebt = "";
-			String totaldebt = "";
-			String myhardcreditinquiries = "";
-			String mypublicrecords = "";
-			String creditscore = "";
-
-			String dateofreport = utilidades.getDatoHorizontal(textoMinuscula,"fecha de emision");
-			String address[] = getAddressTransunionPatronTres(textoMinuscula,patronTransunion.getTagAddressPatronTres());
-			String birthyear = utilidades.getDatoHorizontal(textoMinuscula,"fecha de nacimiento");
-			String overallcreditusage = "";
-
-			//Se crea el reporte que se va ha insertar
-			Reporte reporte = new Reporte(ssn, name, patronTransunion.getCra(), employeer, opencreditcards, openretailcards, 
-					openrealrstateloans, openinstallmentloans, totalopenaccounts, accountseverlate, 
-					collectionsaccounts, averageaccountage, oldestaccount, newestaccount,
-					myhardcreditinquiries, creditdebt, totalcredit, creditandretailcarddebt, 
-					realestatedebt, installmentloansdebt, collectionsdebt, totaldebt, mypublicrecords, 
-					dateofreport, creditscore, address, birthyear, overallcreditusage,"PatronTres");
-
+			Reporte reporte = new Reporte();
+			reporte.setSsn(getSSN(textoMinuscula));
+			reporte.setCra(patronTransunion.getCra());
+			reporte.setEmployeer(getNombreEmpleadorTransunionPatronTres(textoMinuscula,patronTransunion.getTagNamePatronTres()));
+			reporte.setName(utilidades.getDatoHorizontal(textoMinuscula,patronTransunion.getTagNamePatronTres()));
+			reporte.setDateofreport(utilidades.getDatoHorizontal(textoMinuscula,"fecha de emision"));
+			reporte.setAddress(getAddressTransunionPatronTres(textoMinuscula,patronTransunion.getTagAddressPatronTres()));
+			reporte.setBirthyear(utilidades.getDatoHorizontal(textoMinuscula,"fecha de nacimiento"));
+			reporte.setPatron("PatronTres");
+			
 
 			String[] tagFinales = {"adversa","satisfactoria"};
 
@@ -2398,41 +2194,24 @@ public class ScrapingPDF {
 						accountName = accountName.substring(0, accountName.indexOf(accountNumber));
 					}
 
-					String accountType = utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"de cuenta"),"pagado"),"ultimo"),"pago");
-					String accountStatus = "";
-					String paymentStatus = utilidades.getDatoHorizontal(textoCuenta,"estado de pago");
-					String statusUpdated = utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"actualizacion")," "),"estado");
-					String balance = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"saldo"),"estado");
-					String balanceUpdated = "";
-
-					String limit = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"credito"),"ultimo");
-					String monthlyPayment = "";
-					String pastDueAmount = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"realizado")," ");
-					String highestBalance = utilidades.getDatoHorizontal(textoCuenta,"alto");
-					String terms = utilidades.getDatoHorizontal(textoCuenta,"terminos");
-					String responsibility = utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"responsabilidad"),"pagado"),"fecha"),"ultimo");
-					String yourStatement = "";
-
-					String comments = utilidades.getDatoHorizontal(textoCuenta,"observaciones");
-					String dateOpened = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"apertura")," ");
-					String loanType = "";
-					String dateClosed = utilidades.getDatoHorizontal(textoCuenta,"cierre");
-					String statusDetail = "";
-					String paymentReceived = utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"recibido")," ");
-					String originalCreditor = "";
-					String lastActivity = "";
-					String accounttypeone = utilidades.getDatoHorizontal(utilidades.getDatoHorizontal(utilidades.getDatoHorizontal(textoCuenta,"prestamo"),"ultimo"),"saldo");
-					String accounttypetwo = getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuentaCuantro);
-					String creditusage = "";
-					String creditusagedescription = "";
-
-					CuentaReporte cuentaReporte = new CuentaReporte(accountName, accountNumber,
-							accountType, accountStatus, paymentStatus, statusUpdated, balance, balanceUpdated, limit,
-							monthlyPayment, pastDueAmount, highestBalance, terms, responsibility, yourStatement,
-							comments, dateOpened, loanType, dateClosed, statusDetail, paymentReceived, originalCreditor,
-							lastActivity, accounttypeone, accounttypetwo, creditusage, creditusagedescription,
-							null);
-
+					CuentaReporte cuentaReporte = new CuentaReporte();
+					cuentaReporte.setAccountName(accountName );
+					cuentaReporte.setAccountNumber(accountNumber );
+					cuentaReporte.setAccountType(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"de cuenta"),"pagado"),"ultimo"),"pago"));
+					cuentaReporte.setPaymentStatus(utilidades.getDatoHorizontal(textoCuenta,"estado de pago") );
+					cuentaReporte.setStatusUpdated(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"actualizacion")," "),"estado"));
+					cuentaReporte.setBalance(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"saldo"),"estado") );
+					cuentaReporte.setLimit( utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"credito"),"ultimo"));
+					cuentaReporte.setPastDueAmount(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"realizado")," ") );
+					cuentaReporte.setHighestBalance( utilidades.getDatoHorizontal(textoCuenta,"alto"));
+					cuentaReporte.setTerms( utilidades.getDatoHorizontal(textoCuenta,"terminos"));
+					cuentaReporte.setComments(utilidades.getDatoHorizontal(textoCuenta,"observaciones") );
+					cuentaReporte.setDateOpened(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"apertura")," "));
+					cuentaReporte.setAccounttypeone(utilidades.getDatoHorizontal(utilidades.getDatoHorizontal(utilidades.getDatoHorizontal(textoCuenta,"prestamo"),"ultimo"),"saldo"));
+					cuentaReporte.setAccounttypetwo(getTypeAccount(textosTiposCuentas,textoCuenta,tagFinales,tiposCuentaCuantro));
+					cuentaReporte.setPaymentReceived(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"recibido")," "));
+					cuentaReporte.setDateClosed(utilidades.getDatoHorizontal(textoCuenta,"cierre"));
+					cuentaReporte.setResponsibility(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getCadenaRecortada(utilidades.getDatoHorizontal(textoCuenta,"responsabilidad"),"pagado"),"fecha"),"ultimo"));
 
 
 				}
@@ -2900,6 +2679,31 @@ public class ScrapingPDF {
 
 		return resultado;
 
+	}
+
+	private String getCreditFileStatus(String textoMinuscula) {
+
+		String resultado = "";
+
+		int posicionInicial = textoMinuscula.indexOf("credit file status");
+		int posicionFinal = textoMinuscula.indexOf("alert contacts");
+		posicionFinal = posicionFinal < 0 ? textoMinuscula.indexOf("average account") : posicionFinal;
+
+		if (posicionInicial > 0) {
+
+			if (posicionFinal > 0) 
+
+				resultado = textoMinuscula.substring(posicionInicial,posicionFinal).replaceAll("credit file status", "").trim();
+
+			else
+
+				resultado = utilidades.getDatoHorizontal(textoMinuscula, "credit file status");
+
+
+
+		}
+
+		return resultado;
 	}
 
 	/*****************************************************************************************************
@@ -3411,9 +3215,9 @@ public class ScrapingPDF {
 	}
 
 	private String generarJSON(Reporte reporte,List<CuentaReporte> cuentasReporte, 
-			                   List<Inquiery> cuentaInquieries, List<PublicAccount> publicAccounts) {
+			List<Inquiery> cuentaInquieries, List<PublicAccount> publicAccounts) {
 
-		
+
 		String previous_address = "";
 		String current_address = "";
 		String last_reported_employment = "";
@@ -3448,7 +3252,7 @@ public class ScrapingPDF {
 		 *************************************************************************************************************/
 
 		JSONObject jsonReporte = utilidades.getJSONObjectOrdenNatural();
-		
+
 
 		jsonReporte.put("bureau_id",bureau_id) ;
 		jsonReporte.put("credit_file_date",credit_file_date);
@@ -3527,7 +3331,7 @@ public class ScrapingPDF {
 
 
 			JSONObject jsonCuentaReporte = utilidades.getJSONObjectOrdenNatural();
-			
+
 			jsonCuentaReporte.put("account_name",cuentaReporte.getAccountName());
 			jsonCuentaReporte.put("item_type","credit");
 			jsonCuentaReporte.put("date",cuentaReporte.getDateOpened());
@@ -3564,14 +3368,14 @@ public class ScrapingPDF {
 		}
 
 
-		
+
 
 
 
 		/*************************************************************************************************************
 		 ******************************** Datos Cuentas de Inquirires del Reporte ***************************************
 		 *************************************************************************************************************/
-		
+
 		if (cuentaInquieries != null) {
 
 			for (Inquiery inquiery : cuentaInquieries) {
@@ -3595,7 +3399,7 @@ public class ScrapingPDF {
 
 		}
 
-		
+
 
 		/*************************************************************************************************************
 		 ******************************** Datos Cuentas de Publicas del Reporte ***************************************
@@ -3628,7 +3432,7 @@ public class ScrapingPDF {
 		}
 
 		jsonReporte.put("credit_report_items",cuentasReporteArray);
-		
+
 
 		return jsonReporte.toString();
 	}
@@ -3637,7 +3441,7 @@ public class ScrapingPDF {
 
 		LayoutTextStripper stripper = new LayoutTextStripper();
 		stripper.setSortByPosition(true);
-		stripper.fixedCharWidth = 5;
+		stripper.fixedCharWidth = 15;
 		String textoConFormato = stripper.getText(document).toLowerCase().
 				replaceAll("trans union", "transunion").
 				replaceAll("expenan","experian");

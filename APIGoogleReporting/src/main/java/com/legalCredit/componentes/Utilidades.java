@@ -764,10 +764,10 @@ public class Utilidades {
 
 		}
 
-		File fileOutputPDF = File.createTempFile("mergePdf", "pdf");
+		File fileOutputPDF = new File("mergePdf.pdf");//File.createTempFile("mergePdf", "pdf");
 
 		PdfUtilities.mergePdf(files, fileOutputPDF);
-
+		
 		return fileOutputPDF;
 
 	}

@@ -55,69 +55,7 @@ public class CuentaReporte {
 	
 	public CuentaReporte(){}
 	
-	public CuentaReporte(String accountName, String accountNumber, String accountType,
-			String accountStatus, String paymentStatus, String statusUpdated, String balance, String balanceUpdated,
-			String limit, String monthlyPayment, String pastDueAmount, String highestBalance, String terms,
-			String responsibility, String yourStatement, String comments, String dateOpened, String loanType,
-			String dateClosed, String statusDetail, String paymentReceived,String originalCreditor,
-			String lastActivity, String accounttypeone,String accounttypetwo,String creditusage,
-			String creditusagedescription,Map<String, List<HistorialPago>> mesesCanceladosPorAno,
-			String creditFileStatus) {
-		
-		this.accountName = accountName;
-		this.accountNumber = accountNumber;
-		this.accountType = accountType;
-		this.accountStatus = accountStatus;
-		this.paymentStatus = paymentStatus;
-		this.statusUpdated = statusUpdated;
-		this.balance = balance;
-		this.balanceUpdated = balanceUpdated;
-		this.limit = limit;
-		this.monthlyPayment = monthlyPayment;
-		this.pastDueAmount = pastDueAmount;
-		this.highestBalance = highestBalance;
-		this.terms = terms;
-		this.responsibility = responsibility;
-		this.yourStatement = yourStatement;
-		this.comments = comments;
-		this.dateOpened = dateOpened;
-		this.loanType = loanType;
-		this.dateClosed = dateClosed;
-		this.statusDetail = statusDetail;
-		this.paymentReceived = paymentReceived;
-		this.originalCreditor = originalCreditor;
-		this.lastActivity = lastActivity;
-		this.accounttypeone = accounttypeone;
-		this.accounttypetwo = accounttypetwo;
-		this.creditusage = creditusage;
-		this.creditusagedescription = creditusagedescription;
-		this.mesesCanceladosPorAno = mesesCanceladosPorAno;
-		this.creditFileStatus = creditFileStatus;
 	
-	}
-	
-
-	public CuentaReporte(String accountName, String accountNumber, String accountType,
-			String accountStatus, String paymentStatus, String statusUpdated, String balance, String balanceUpdated,
-			String limit, String monthlyPayment, String pastDueAmount, String highestBalance, String terms,
-			String responsibility, String yourStatement, String comments, String dateOpened, String loanType,
-			String dateClosed, String statusDetail, String paymentReceived,String originalCreditor,
-			String lastActivity, String accounttypeone,String accounttypetwo,String creditusage,
-			String creditusagedescription,Map<String, List<HistorialPago>> mesesCanceladosPorAno) {
-		
-		this(accountName,  accountNumber,  accountType,
-				 accountStatus,  paymentStatus,  statusUpdated,  balance,  balanceUpdated,
-				 limit,  monthlyPayment,  pastDueAmount,  highestBalance,  terms,
-				 responsibility,  yourStatement,  comments,  dateOpened,  loanType,
-				 dateClosed,  statusDetail,  paymentReceived, originalCreditor,
-				 lastActivity,  accounttypeone, accounttypetwo, creditusage,
-				 creditusagedescription, mesesCanceladosPorAno,"");
-		
-	}
-
-	
-	
-
 	public String getAccountName() {
 		return accountName;
 	}

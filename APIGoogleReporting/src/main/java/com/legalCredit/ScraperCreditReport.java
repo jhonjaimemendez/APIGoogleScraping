@@ -86,7 +86,7 @@ public class ScraperCreditReport implements HttpFunction {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		File file = new File("reportes/reportesScrapeados/equifax/creditReport_1485542551006.pdf");
+		File file = new File("recursos/archivospruebas/experian/public.pdf");
 		FileInputStream fileInputStream = new FileInputStream(file);
 		byte[] bytes = new byte[(int)file.length()];
 		fileInputStream.read(bytes);

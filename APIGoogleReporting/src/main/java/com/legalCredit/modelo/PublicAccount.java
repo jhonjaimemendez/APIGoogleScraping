@@ -26,6 +26,7 @@ public class PublicAccount {
 	private String status;
 	private String status_detail;
 	private String responsibility;
+	private String comments;
 
 	
 	
@@ -42,6 +43,7 @@ public class PublicAccount {
 		this.referenceNumber = referenceNumber;
 		this.court = court;
 		this.plaintiff = plaintiff;
+		
 	}
 
 	
@@ -133,6 +135,10 @@ public class PublicAccount {
 
 	public String getPlaintiff() {
 		return plaintiff;
+	}
+	
+	public String getComments() {
+		return comments;
 	}
 	
 	

@@ -51,45 +51,6 @@ public class Reporte {
 
 	public Reporte() {}
 
-	public Reporte(String ssn, String name, String cra, String[] employeer, String opencreditcards,
-			String openretailcards, String openrealrstateloans, String openinstallmentloans, String totalopenaccounts,
-			String accountseverlate, String collectionsaccounts, String averageaccountage, String oldestaccount,
-			String newestaccount, String myhardcreditinquiries, String creditdebt, String totalcredit,
-			String creditandretailcarddebt, String realestatedebt, String installmentloansdebt, String collectionsdebt,
-			String totaldebt, String mypublicrecords, String dateofreport, String creditscore, String[] address,
-			String birthyear,String overallcreditusage,String patron) {
-
-		this.ssn = ssn;
-		this.name = name;
-		this.cra = cra;
-		this.employeer = employeer;
-		this.opencreditcards = opencreditcards;
-		this.openretailcards = openretailcards;
-		this.openrealrstateloans = openrealrstateloans;
-		this.openinstallmentloans = openinstallmentloans;
-		this.totalopenaccounts = totalopenaccounts;
-		this.accountseverlate = accountseverlate;
-		this.collectionsaccounts = collectionsaccounts;
-		this.averageaccountage = averageaccountage;
-		this.oldestaccount = oldestaccount;
-		this.newestaccount = newestaccount;
-		this.myhardcreditinquiries = myhardcreditinquiries;
-		this.creditdebt = creditdebt;
-		this.totalcredit = totalcredit;
-		this.creditandretailcarddebt = creditandretailcarddebt;
-		this.realestatedebt = realestatedebt;
-		this.installmentloansdebt = installmentloansdebt;
-		this.collectionsdebt = collectionsdebt;
-		this.totaldebt = totaldebt;
-		this.mypublicrecords = mypublicrecords;
-		this.dateofreport = dateofreport;
-		this.creditscore = creditscore;
-		this.address = address;
-		this.birthyear = birthyear;
-		this.overallcreditusage = overallcreditusage;
-		this.patron = patron;
-	}
-
 
 	public String getSsn() {
 		return ssn;
