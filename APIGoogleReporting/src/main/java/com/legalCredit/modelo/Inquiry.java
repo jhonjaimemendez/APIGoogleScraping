@@ -14,7 +14,7 @@ package com.legalCredit.modelo;
 
 
 
-public class Inquiery {
+public class Inquiry {
 
 	private String accountName; 
 	private String inquiryDate; 
@@ -27,7 +27,7 @@ public class Inquiery {
 	private String permissible_purpose;
 	
 
-	public Inquiery(String accountName, String inquiryDate, String removalDate, String businessType,
+	public Inquiry(String accountName, String inquiryDate, String removalDate, String businessType,
 			String contactInformation, String inquieresType,String comments,String inquieresTypeTwo,
 			String permissible_purpose) {
 

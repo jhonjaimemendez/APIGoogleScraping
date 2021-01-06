@@ -13,10 +13,14 @@
 package com.legalCredit.componentes;
 
 
+
+
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,7 +44,6 @@ import org.apache.tika.language.detect.LanguageDetector;
 import org.apache.tika.language.detect.LanguageResult;
 import org.json.JSONObject;
 
-import net.sourceforge.tess4j.ITesseract;
 import net.sourceforge.tess4j.ITesseract.RenderedFormat;
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
@@ -242,7 +245,7 @@ public class Utilidades {
 		String año =  "";
 		String dia = "";
 
-		String[] textoFecha = texto.replaceAll(",", "").split(caracterSeparacion);
+		String[] textoFecha = texto.replaceAll("( )+", " ").replaceAll(",", "").split(caracterSeparacion);
 
 		if (textoFecha.length == 1) {
 
@@ -522,7 +525,7 @@ public class Utilidades {
 
 	public Pattern getPatronFormatoTablaPatronDos() {
 
-		String regexFormatoTablaPatronDos = "\\s*year\\s+jan\\s+feb\\s+mar\\s+apr\\s+may\\s+jun\\s+jul\\s+aug\\s+sep\\s+oct\\s+nov\\s+dec";
+		String regexFormatoTablaPatronDos = "\\s*year\\s+jan\\s+feb\\s+mar\\s+apr";
 
 		Pattern patronFormatoTablaPatronDos = Pattern.compile(regexFormatoTablaPatronDos,Pattern.CASE_INSENSITIVE);
 
@@ -540,7 +543,7 @@ public class Utilidades {
 
 	public Pattern getPatronDateInquiresPatrosDos() {
 
-		String regexDateInquiresPatrosDos = "[a-z]{3}\\s+\\d{1,2}\\s*,\\s*\\d{4}";
+		String regexDateInquiresPatrosDos = "[a-z]{3}\\s*\\d{1,2}\\s*,\\s*\\d{4}";
 
 		Pattern patronDateInquiresPatrosDos = Pattern.compile(regexDateInquiresPatrosDos);
 
@@ -673,7 +676,7 @@ public class Utilidades {
 
 	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile) {
 
-		File file = null;
+		DataOCRFile dataOCRFile = null;
 		String idioma = "";
 
 		try {
@@ -682,9 +685,10 @@ public class Utilidades {
 			Tesseract tesseract = new Tesseract();
 			tesseract.setPageSegMode(1);
 			tesseract.setDatapath("recursos/tessdata");
+			tesseract.setTessVariable("preserve_interword_spaces", "1");
 			tesseract.setLanguage("eng"); //Se escoge inicialmente lenguaje ingles pero se revisara si este es
-
-
+			
+			
 			idioma  = getIdiomaTexto(getTextoImagen(pdfRenderer,tesseract,nombreArchivo,0));
 
 			if (idioma.equalsIgnoreCase("es")) 
@@ -694,31 +698,72 @@ public class Utilidades {
 			else 
 				tesseract.setLanguage("eng");
 
-			file = getPDFAndTextImages(pdfRenderer,tesseract,tmpFile.getName(),document.getNumberOfPages());
-
-
+			dataOCRFile = getPDFAndTextImages(pdfRenderer,tesseract,tmpFile.getName(),document.getNumberOfPages());
+			dataOCRFile.setIdioma(idioma);
+			
+			
 		} catch (Exception e) {
 
 			e.printStackTrace();
 		} 
 
 
-		return new DataOCRFile(file, idioma);
+		return dataOCRFile;
 
 	}
 
-	private String getTextoImagen(PDFRenderer pdfRenderer,ITesseract tesseract,String nombreArchivo,
+	private int getResolucionImagen(String ruta) {
+		
+		int resolucion =300; 
+		
+		try {
+
+			Process process = Runtime.getRuntime().exec("cmd /c  tesseract  --psm 0 " +ruta + " stdout");
+			
+			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+			String linea = null;
+			StringBuffer buffer = new StringBuffer();
+			
+			while ((linea = bufferedReader.readLine()) != null)  
+				buffer.append(linea).append("\n");
+				
+
+			bufferedReader.close();
+			
+			process.waitFor();
+
+			String resultado = buffer.toString();
+			
+			String datoResolucion = getDatoHorizontal(resultado.toLowerCase(), "resolution as");	
+
+			resolucion = Integer.parseInt(datoResolucion);
+			
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+		}
+		
+		return resolucion;
+
+		
+	}
+	
+	
+	private String getTextoImagen(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
 			int numeroPagina) 
 					throws IOException, TesseractException {
 
+		
 		BufferedImage bim = pdfRenderer.renderImageWithDPI(numeroPagina, 300, ImageType.RGB);
+		
 		String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + numeroPagina;
 
 		File temp = File.createTempFile(nombreImagen, ".tif"); 
 		ImageIO.write(bim, "tif", temp);
-
+		
 		String result = tesseract.doOCR(temp);
-
+		
 		return result;
 
 	}
@@ -740,25 +785,64 @@ public class Utilidades {
 
 	}
 
- 	private File getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
+ 	private DataOCRFile getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
 			int totalPaginas) throws Exception {
 
+ 		StringBuffer textoCompleto = new StringBuffer();
 		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
 		list.add(RenderedFormat.PDF);
 
 		File[] files = new File[totalPaginas];
 
+		int resolucion = 300;
+		
 		for (int page = 0; page < totalPaginas; page++) {
 
+			//Se obtiene la resolucion de la imagen
 			BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 300, ImageType.RGB);
 			String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + page;
-			String path = "recursos/temp/" + nombreImagen;
-
+			
 			File temp = File.createTempFile(nombreImagen, ".tif"); 
 			ImageIO.write(bim, "tif", temp);
-
-			tesseract.createDocuments(temp.getAbsolutePath(), path , list);
-
+			
+			int resolucionImagenActual =  getResolucionImagen(temp.getAbsolutePath());
+			
+			if (page == 0) {
+				
+				if (resolucionImagenActual >= 200 && resolucionImagenActual <=300)
+					
+					resolucion = 400;
+				
+			} else {
+			
+				if (resolucion == 300 && (resolucionImagenActual >= 200 && resolucionImagenActual <=300))
+					
+					resolucion = 400;
+				
+				else if (resolucion == 400 && (resolucionImagenActual >= 300 && resolucionImagenActual <=400))
+					
+					resolucion = 300;
+				
+				else if (resolucion < 200 && resolucionImagenActual < 200)
+					
+					resolucion = resolucionImagenActual;
+				
+				
+			}
+			
+			if (resolucion != 300) {
+				
+				bim = pdfRenderer.renderImageWithDPI(page, resolucion, ImageType.RGB);
+				temp = File.createTempFile(nombreImagen, ".tif"); 
+				ImageIO.write(bim, "tif", temp);
+				
+			}
+			
+			
+			String path = "recursos/temp/" + nombreImagen;
+		    tesseract.createDocuments(temp.getAbsolutePath(), path , list);
+		    textoCompleto.append(tesseract.doOCR(temp));
+		    
 			File file = new File(path + ".pdf");
 			files[page] = file;
 
@@ -768,7 +852,7 @@ public class Utilidades {
 
 		PdfUtilities.mergePdf(files, fileOutputPDF);
 		
-		return fileOutputPDF;
+		return new DataOCRFile(fileOutputPDF, textoCompleto.toString());
 
 	}
 	
@@ -790,7 +874,8 @@ public class Utilidades {
 				"payment","information","first","toyota","equifax","transunion","experian","security",
 				"credit","phone","original","creditor","reported","comment","terms","dispute","items",
 				"history","identification","original","before","after","address id","address",
-				"current","previous","dear","file","formerly","finalballoon"};
+				"current","previous","dear","file","formerly","finalballoon","bankruptcies",
+				"judgments","liens"};
 
 		return palabrasCorregir;
 		
@@ -899,15 +984,19 @@ public class Utilidades {
 
 		private File file;
 		private String idioma;
+		private String texto;
 
 
-		public DataOCRFile(File file, String idioma) {
+		public DataOCRFile(File file,String texto) {
 
 			this.file = file;
-			this.idioma = idioma;
+			this.texto = texto;
 
 		}
 
+		public void setIdioma(String idioma) {
+			this.idioma = idioma;
+		}
 
 		public File getFile() {
 			return file;
@@ -918,5 +1007,9 @@ public class Utilidades {
 			return idioma;
 		}
 
+		
+		public String getTexto() {
+			return texto;
+		}
 	}
 }

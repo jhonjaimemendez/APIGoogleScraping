@@ -14,63 +14,21 @@ package com.legalCredit.modelo;
 
 public class PublicAccount {
 
-	private String accountName;
-	private String filingDate;
-	private String dateResolved;
-	private String claim_amount;
-	private String liability_amount;
-	private String judgment_in_favor;
-	private String referenceNumber;
-	private String court;
-	private String plaintiff;
-	private String status;
-	private String status_detail;
-	private String responsibility;
-	private String comments;
+	private String accountName= "";
+	private String filingDate= "";
+	private String dateResolved= "";
+	private String claim_amount= "";
+	private String liability_amount= "";
+	private String judgment_in_favor= "";
+	private String referenceNumber= "";
+	private String court= "";
+	private String plaintiff= "";
+	private String status= "";
+	private String status_detail= "";
+	private String responsibility= "";
+	private String comments= "";
 
 	
-	
-	public PublicAccount(String accountName, String filingDate, String dateResolved, String claim_amount,
-	 	 	             String liability_amount, String judgment_in_favor, String referenceNumber, String court, 
-	 	 	             String plaintiff) {
-	
-		this.accountName = accountName;
-		this.filingDate = filingDate;
-		this.dateResolved = dateResolved;
-		this.claim_amount = claim_amount;
-		this.liability_amount = liability_amount;
-		this.judgment_in_favor = judgment_in_favor;
-		this.referenceNumber = referenceNumber;
-		this.court = court;
-		this.plaintiff = plaintiff;
-		
-	}
-
-	
-	
-
-	public PublicAccount(String accountName, String filingDate, String dateResolved, String claim_amount,
-			String liability_amount, String judgment_in_favor, String referenceNumber, String court, 
-			String plaintiff,String status, String status_detail, String responsibility) {
-		
-		this.accountName = accountName;
-		this.filingDate = filingDate;
-		this.dateResolved = dateResolved;
-		this.claim_amount = claim_amount;
-		this.liability_amount = liability_amount;
-		this.judgment_in_favor = judgment_in_favor;
-		this.referenceNumber = referenceNumber;
-		this.court = court;
-		this.plaintiff = plaintiff;
-		this.status = status;
-		this.status_detail = status_detail;
-		this.responsibility = responsibility;
-		
-		
-	}
-
-
-
 
 	public String getStatus() {
 		return status;
@@ -140,6 +98,98 @@ public class PublicAccount {
 	public String getComments() {
 		return comments;
 	}
+
+
+
+
+	public void setAccountName(String accountName) {
+		this.accountName = accountName;
+	}
+
+
+
+
+	public void setFilingDate(String filingDate) {
+		this.filingDate = filingDate;
+	}
+
+
+
+
+	public void setDateResolved(String dateResolved) {
+		this.dateResolved = dateResolved;
+	}
+
+
+
+
+	public void setClaim_amount(String claim_amount) {
+		this.claim_amount = claim_amount;
+	}
+
+
+
+
+	public void setLiability_amount(String liability_amount) {
+		this.liability_amount = liability_amount;
+	}
+
+
+
+
+	public void setJudgment_in_favor(String judgment_in_favor) {
+		this.judgment_in_favor = judgment_in_favor;
+	}
+
+
+
+
+	public void setReferenceNumber(String referenceNumber) {
+		this.referenceNumber = referenceNumber;
+	}
+
+
+
+
+	public void setCourt(String court) {
+		this.court = court;
+	}
+
+
+
+
+	public void setPlaintiff(String plaintiff) {
+		this.plaintiff = plaintiff;
+	}
+
+
+
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+
+
+
+	public void setStatus_detail(String status_detail) {
+		this.status_detail = status_detail;
+	}
+
+
+
+
+	public void setResponsibility(String responsibility) {
+		this.responsibility = responsibility;
+	}
+
+
+
+
+	public void setComments(String comments) {
+		this.comments = comments;
+	}
+	
 	
 	
 }

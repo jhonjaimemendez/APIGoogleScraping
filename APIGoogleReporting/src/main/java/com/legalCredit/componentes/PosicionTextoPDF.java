@@ -33,6 +33,7 @@ public class PosicionTextoPDF extends PDFTextStripper {
 
 	private List<PosicionTexto> palabras;
 	int e = 1;
+	float tamañoLetra;
 	
 	public PosicionTextoPDF(PDDocument documento, int paginaInicial, int paginaFinal) throws IOException {
 
@@ -44,22 +45,26 @@ public class PosicionTextoPDF extends PDFTextStripper {
 
 		Writer dummy = new OutputStreamWriter(new ByteArrayOutputStream());
 		writeText(documento, dummy);
+		
 	}
-
+	
+	
 	/**
 	 * Override the default functionality of PDFTextStripper.
 	 */
 	@Override
 	protected void writeString(String string, List<TextPosition> posicionTextos) throws IOException {
-
+		
 		StringBuffer buffer = new StringBuffer();
 
 		double posXInicial = 0;
 		double posYInicial = 0;
 		
 		boolean sw = true;
+		tamañoLetra = posicionTextos.get(0).getFontSize();
 		
 		TextPosition textoUltimaPosicion = null;
+		
 		
 		for (TextPosition texto : posicionTextos) {
 			
@@ -116,6 +121,10 @@ public class PosicionTextoPDF extends PDFTextStripper {
 		
 		
 		
+	}
+	
+	public float getTamañoLetra() {
+		return tamañoLetra;
 	}
 	
 	public List<PosicionTexto> getPalabras() {

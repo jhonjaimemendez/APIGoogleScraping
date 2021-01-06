@@ -19,35 +19,35 @@ package com.legalCredit.modelo;
 
 public class Reporte {
 
-	private String ssn;
-	private String  name;
-	private String cra;
-	private String[] employeer;
-	private String opencreditcards;
-	private String openretailcards;
-	private String openrealrstateloans;
-	private String openinstallmentloans;
-	private String totalopenaccounts;
-	private String accountseverlate;
-	private String collectionsaccounts;
-	private String averageaccountage;
-	private String oldestaccount;
-	private String newestaccount;
-	private String myhardcreditinquiries;
-	private String creditdebt;
-	private String totalcredit;
-	private String creditandretailcarddebt;
-	private String realestatedebt;
-	private String installmentloansdebt;
-	private String collectionsdebt;
-	private String totaldebt;
-	private String mypublicrecords;
-	private String dateofreport;
-	private String creditscore;
-	private String[] address;
-	private String birthyear;
-	private String overallcreditusage;
-	private String patron;
+	private String ssn = "";
+	private String  name = "";
+	private String cra = "";
+	private String[] employeer = null;
+	private String opencreditcards = "";
+	private String openretailcards = "";
+	private String openrealrstateloans = "";
+	private String openinstallmentloans = "";
+	private String totalopenaccounts = "";
+	private String accountseverlate = "";
+	private String collectionsaccounts = "";
+	private String averageaccountage = "";
+	private String oldestaccount = "";
+	private String newestaccount = "";
+	private String myhardcreditinquiries = "";
+	private String creditdebt = "";
+	private String totalcredit = "";
+	private String creditandretailcarddebt = "";
+	private String realestatedebt = "";
+	private String installmentloansdebt = "";
+	private String collectionsdebt = "";
+	private String totaldebt = "";
+	private String mypublicrecords = "";
+	private String dateofreport = "";
+	private String creditscore = "";
+	private String[] address = null;
+	private String birthyear = "";
+	private String overallcreditusage = "";
+	private String patron = "";
 
 	public Reporte() {}
 
