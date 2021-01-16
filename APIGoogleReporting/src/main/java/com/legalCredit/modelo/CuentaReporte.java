@@ -22,35 +22,34 @@ import java.util.Map;
 
 public class CuentaReporte {
 	
-	private String accountName;
-	private String accountNumber;
-	private String accountType;
-	private String accountStatus;
-	private String paymentStatus;
-	private String statusUpdated;
-	private String balance;
-	private String balanceUpdated;
-	private String limit;
-	private String monthlyPayment;
-	private String pastDueAmount;
-	private String highestBalance;
-	private String terms;
-	private String responsibility;
-	private String yourStatement;
-	private String comments;
-	private String dateOpened;
-	private String loanType;
-	private String dateClosed;
-	private String statusDetail;
-	private String paymentReceived;
-	private String originalCreditor;
-	private String lastActivity;
-	private String accounttypeone;
-	private String accounttypetwo;
-	private String creditusage;
-	private String creditusagedescription;
-	private String creditFileStatus;
-	
+	private String accountName = "";
+	private String accountNumber = "";
+	private String accountType = "";
+	private String accountStatus = "";
+	private String paymentStatus = "";
+	private String statusUpdated = "";
+	private String balance = "";
+	private String balanceUpdated = "";
+	private String limit = "";
+	private String monthlyPayment = "";
+	private String pastDueAmount = "";
+	private String highestBalance = "";
+	private String terms = "";
+	private String responsibility = "";
+	private String yourStatement = "";
+	private String comments = "";
+	private String dateOpened = "";
+	private String loanType = "";
+	private String dateClosed = "";
+	private String statusDetail = "";
+	private String paymentReceived = "";
+	private String originalCreditor = "";
+	private String lastActivity = "";
+	private String accounttypeone = "";
+	private String accounttypetwo = "";
+	private String creditusage = "";
+	private String creditusagedescription = "";
+	private List<List<String>> datosCuentaHistorico;
 	private Map<String, List<HistorialPago>> mesesCanceladosPorAno;
 	
 	public CuentaReporte(){}
@@ -73,105 +72,99 @@ public class CuentaReporte {
 	}
 
 	public String getPaymentStatus() {
-		return paymentStatus == null ? "" : paymentStatus;
+		return paymentStatus  ;
 	}
 
 	public String getStatusUpdated() {
-		return statusUpdated == null ? "" : statusUpdated;
+		return statusUpdated;
 	}
 
 	public String getBalance() {
-		return balance == null ? "" : balance;
+		return balance;
 	}
 
 	public String getBalanceUpdated() {
-		return balanceUpdated == null ? "" : balanceUpdated;
+		return balanceUpdated;
 	}
 
 	public String getMonthlyPayment() {
-		return monthlyPayment == null ? "" : monthlyPayment;
+		return monthlyPayment;
 	}
 
 	public String getPastDueAmount() {
-		return pastDueAmount == null ? "" : pastDueAmount;
+		return pastDueAmount;
 	}
 
 	public String getHighestBalance() {
-		return highestBalance == null ? "" : highestBalance;
+		return highestBalance;
 	}
 
 	public String getTerms() {
-		return terms == null ? "" : terms;
+		return terms;
 	}
 
 	public String getResponsibility() {
-		return responsibility == null ? "" : responsibility;
+		return responsibility;
 	}
 
 	public String getYourStatement() {
-		return yourStatement == null ? "" : yourStatement;
+		return yourStatement;
 	}
 
 	public String getComments() {
-		return comments == null ? "" : comments;
+		return comments;
 	}
 	
 	public String getLimit() {
-		return limit == null ? "" : limit;
+		return limit;
 	}
 	
 	public String getDateOpened() {
-		return dateOpened == null ? "" : dateOpened;
+		return dateOpened;
 	}
 	
 	public String getDateClosed() {
-		return dateClosed == null ? "" : dateClosed;
+		return dateClosed;
 	}
 	
 	public String getLoanType() {
-		return loanType == null ? "" : loanType;
+		return loanType;
 	}
 	
 	public String getStatusDetail() {
-		return statusDetail == null ? "" : statusDetail;
+		return statusDetail;
 	}
 	
 	public String getPaymentReceived() {
-		return paymentReceived == null ? "" : paymentReceived;
+		return paymentReceived;
 	}
 	
 	public String getOriginalCreditor() {
-		return originalCreditor == null ? "" : originalCreditor;
+		return originalCreditor;
 	}
 	
 	public String getLastActivity() {
-		return lastActivity == null ? "" : lastActivity;
+		return lastActivity;
 	}
 	
 	public String getAccounttypeone() {
-		return accounttypeone == null ? "" : accounttypeone;
+		return accounttypeone;
 	}
 	
 	public String getAccounttypetwo() {
-		return accounttypetwo == null ? "" : accounttypetwo;
+		return accounttypetwo;
 	}
 	
 	public String getCreditusage() {
-		return creditusage == null ? "" : creditusage;
+		return creditusage;
 	}
 	
 	public String getCreditusagedescription() {
-		return creditusagedescription == null ? "" : creditusagedescription;
+		return creditusagedescription;
 	}
 	
-	public Map<String, List<HistorialPago>> getMesesCanceladosPorAno() {
-		return mesesCanceladosPorAno;
-	}
 	
-	public String getCreditFileStatus() {
-		return creditFileStatus;
-	}
-
+	
 	public void setAccountName(String accountName) {
 		this.accountName = accountName;
 	}
@@ -280,12 +273,20 @@ public class CuentaReporte {
 		this.creditusagedescription = creditusagedescription;
 	}
 
-	public void setCreditFileStatus(String creditFileStatus) {
-		this.creditFileStatus = creditFileStatus;
+	public Map<String, List<HistorialPago>> getMesesCanceladosPorAno() {
+		return mesesCanceladosPorAno;
 	}
 
 	public void setMesesCanceladosPorAno(Map<String, List<HistorialPago>> mesesCanceladosPorAno) {
 		this.mesesCanceladosPorAno = mesesCanceladosPorAno;
+	}
+	
+	public List<List<String>> getDatosCuentaHistorico() {
+		return datosCuentaHistorico;
+	}
+	
+	public void setDatosCuentaHistorico(List<List<String>> datosCuentaHistorico) {
+		this.datosCuentaHistorico = datosCuentaHistorico;
 	}
 	
 	

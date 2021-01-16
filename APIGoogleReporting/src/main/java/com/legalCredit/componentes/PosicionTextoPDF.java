@@ -17,6 +17,10 @@ package com.legalCredit.componentes;
  * Clase que obtiene las palabras que contiene un PDF
  */
 
+/**
+ * Clase que obtiene las palabras que contiene un PDF
+ */
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;

@@ -16,15 +16,15 @@ package com.legalCredit.modelo;
 
 public class Inquiry {
 
-	private String accountName; 
-	private String inquiryDate; 
-	private String removalDate;
-	private String businessType;
-	private String contactInformation; 
-	private String inquieresType;
-	private String comments;
-	private String inquieresTypeTwo;
-	private String permissible_purpose;
+	private String accountName= ""; 
+	private String inquiryDate= ""; 
+	private String removalDate= "";
+	private String businessType= "";
+	private String contactInformation= ""; 
+	private String inquieresType= "";
+	private String comments= "";
+	private String inquieresTypeTwo= "";
+	private String permissible_purpose= "";
 	
 
 	public Inquiry(String accountName, String inquiryDate, String removalDate, String businessType,

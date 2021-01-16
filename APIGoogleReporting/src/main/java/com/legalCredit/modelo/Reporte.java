@@ -12,13 +12,9 @@
 
 package com.legalCredit.modelo;
 
-/**
- *  Esta clase modela los datos de un reporte
- *  
- */
-
 public class Reporte {
 
+	
 	private String ssn = "";
 	private String  name = "";
 	private String cra = "";
@@ -48,6 +44,7 @@ public class Reporte {
 	private String birthyear = "";
 	private String overallcreditusage = "";
 	private String patron = "";
+	private String creditFileStatus = "";
 
 	public Reporte() {}
 
@@ -311,5 +308,18 @@ public class Reporte {
 	public void setPatron(String patron) {
 		this.patron = patron;
 	}
+
 	
+
+	public String getCreditFileStatus() {
+		return creditFileStatus;
+	}
+
+
+	public void setCreditFileStatus(String creditFileStatus) {
+		this.creditFileStatus = creditFileStatus;
+	}
+	
+	
+
 }

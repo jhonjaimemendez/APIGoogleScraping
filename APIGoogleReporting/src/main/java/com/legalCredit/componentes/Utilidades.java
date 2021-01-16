@@ -13,9 +13,10 @@
 package com.legalCredit.componentes;
 
 
-
-
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
@@ -52,7 +53,6 @@ import net.sourceforge.tess4j.util.PdfUtilities;
 
 
 
-
 /**
  * 
  * Se definen funciones comunes que pueden ser utilizadas en todo el proyecto
@@ -64,9 +64,10 @@ public class Utilidades {
 	private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
 	private static Pattern patronNumeroEntero;
 	private static Pattern patronNumeroReal;
+
 	private String[] meses = {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"};
-
-
+	
+	private int numeroMaximaRotaciones;
 	/**
 	 * Cuenta el numero de ocurrencias de una palabra
 	 * @param texto
@@ -125,7 +126,7 @@ public class Utilidades {
 
 		if (posicionInicial >= 0 && posicionFinal > posicionInicial)
 			dato = textoMinuscula.substring(posicionInicial,posicionFinal).replaceFirst("!", "").replaceFirst("-", "").replaceFirst(",", "").
-			replaceAll(tag + "|\r|:|$|;|\\."," ").trim();
+			replaceAll(tag + "|\r|:|$|;|\\.|:|!"," ").trim();
 
 
 		return dato;
@@ -167,7 +168,7 @@ public class Utilidades {
 		return resultado;
 
 	}
-	
+
 	public String getLineasAnterior(String textoMinuscula,String tag,int numeroLineas) {
 
 
@@ -203,6 +204,38 @@ public class Utilidades {
 
 	}
 
+	public String getLineasAnteriorCompletas(String textoMinuscula,String tag,int numeroLineas) {
+
+
+		String resultado = "";
+
+		int posicionFinalComodin = textoMinuscula.indexOf(tag);
+		int posicionInicial = 0;
+		int posicionFinal = posicionFinalComodin;
+
+		int indice = 0;
+
+		while (indice < numeroLineas) {
+
+			posicionInicial = textoMinuscula.lastIndexOf("\n",posicionFinal-4) - 2;
+			posicionInicial = textoMinuscula.lastIndexOf("\n",posicionInicial);
+
+			posicionFinal = posicionInicial;
+
+			indice++;
+		}
+
+
+		if  (posicionInicial >=0) 
+
+			resultado = textoMinuscula.substring(posicionInicial,  textoMinuscula.indexOf(tag))
+			.replaceAll("\r"," ").replaceAll(":", " ").
+			replaceAll("\n","").trim();
+
+		return resultado;
+
+	}
+
 	public String getColumnaPDF(PDDocument document, int posicionInicial, int posicionFinal) throws IOException {
 
 		StringBuffer columna = new StringBuffer();
@@ -228,7 +261,7 @@ public class Utilidades {
 	}
 
 	public String eliminarMasDeDosEspaciosEnTexto(String texto) {
-		
+
 		return texto.replaceAll("( ){2,}", " ");
 	}
 
@@ -442,7 +475,6 @@ public class Utilidades {
 
 	}
 
-
 	/**
 	 * Obtiene las lineas de un texto
 	 * @param texto
@@ -597,13 +629,13 @@ public class Utilidades {
 
 	public Pattern getPatronFechaFormatoReporte() {
 
-		String regexFechaFormatoReporte = "(\\d{2}/\\d{4}\\s+){2,}";
+		String regexFechaFormatoReporte = "(\\d{2}/\\d{4}\\s*){1,}";
 
 		Pattern patronFechaFormatoReporte = Pattern.compile(regexFechaFormatoReporte);
 
 		return patronFechaFormatoReporte;
 	}
-	
+
 	public Pattern getPatronFechaMMDDYYYYY() {
 
 		String regexPatronFechaMMDDYYYYY = "\\d{2}/\\d{2}/\\d{4}";
@@ -614,14 +646,14 @@ public class Utilidades {
 	}
 
 	public Pattern getPatronNumeroCuenta() {
-		
+
 		String regexNumeroCuenta = "([a-z,A-z]*\\d{3,}[a-z,A-z]+\\d*)|(\\d{2,}-\\d{2,})|\\d{1,}|[x]{4,}";
-		
+
 		Pattern patronNumeroCuenta = Pattern.compile(regexNumeroCuenta);
-		
+
 		return patronNumeroCuenta;
 	}
-	
+
 	public static int getNumeroEntero(String texto) {
 
 		if (patronNumeroEntero == null) {
@@ -657,230 +689,33 @@ public class Utilidades {
 		return numero;
 	}
 
-	public String getIdiomaTexto(String texto) {
 
-		String resultado = "en"; 
-
-		try {
-
-			LanguageDetector detector = new OptimaizeLangDetector().loadModels();
-			LanguageResult result = detector.detect(texto);
-			resultado = result.getLanguage();
-
-		} catch (Exception e) {}
-
-
-		return resultado;
-
-	}
-
-	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile) {
-
-		DataOCRFile dataOCRFile = null;
-		String idioma = "";
-
-		try {
-
-			PDFRenderer pdfRenderer = new PDFRenderer(document);
-			Tesseract tesseract = new Tesseract();
-			tesseract.setPageSegMode(1);
-			tesseract.setDatapath("recursos/tessdata");
-			tesseract.setTessVariable("preserve_interword_spaces", "1");
-			tesseract.setLanguage("eng"); //Se escoge inicialmente lenguaje ingles pero se revisara si este es
-			
-			
-			idioma  = getIdiomaTexto(getTextoImagen(pdfRenderer,tesseract,nombreArchivo,0));
-
-			if (idioma.equalsIgnoreCase("es")) 
-
-				tesseract.setLanguage("spa"); 
-
-			else 
-				tesseract.setLanguage("eng");
-
-			dataOCRFile = getPDFAndTextImages(pdfRenderer,tesseract,tmpFile.getName(),document.getNumberOfPages());
-			dataOCRFile.setIdioma(idioma);
-			
-			
-		} catch (Exception e) {
-
-			e.printStackTrace();
-		} 
-
-
-		return dataOCRFile;
-
-	}
-
-	private int getResolucionImagen(String ruta) {
-		
-		int resolucion =300; 
-		
-		try {
-
-			Process process = Runtime.getRuntime().exec("cmd /c  tesseract  --psm 0 " +ruta + " stdout");
-			
-			BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			String linea = null;
-			StringBuffer buffer = new StringBuffer();
-			
-			while ((linea = bufferedReader.readLine()) != null)  
-				buffer.append(linea).append("\n");
-				
-
-			bufferedReader.close();
-			
-			process.waitFor();
-
-			String resultado = buffer.toString();
-			
-			String datoResolucion = getDatoHorizontal(resultado.toLowerCase(), "resolution as");	
-
-			resolucion = Integer.parseInt(datoResolucion);
-			
-		} catch (Exception e) {
-
-			e.printStackTrace();
-
-		}
-		
-		return resolucion;
-
-		
-	}
-	
-	
-	private String getTextoImagen(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
-			int numeroPagina) 
-					throws IOException, TesseractException {
-
-		
-		BufferedImage bim = pdfRenderer.renderImageWithDPI(numeroPagina, 300, ImageType.RGB);
-		
-		String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + numeroPagina;
-
-		File temp = File.createTempFile(nombreImagen, ".tif"); 
-		ImageIO.write(bim, "tif", temp);
-		
-		String result = tesseract.doOCR(temp);
-		
-		return result;
-
-	}
-
-	public JSONObject getJSONObjectOrdenNatural() {
-		
-		JSONObject json = new JSONObject();
-		
-		try {
-			
-			Field changeMap = json.getClass().getDeclaredField("map");
-			changeMap.setAccessible(true);
-			changeMap.set(json, new LinkedHashMap<>());
-			changeMap.setAccessible(false);
-			
-		} catch (Exception e) {}
-		
-		return json;
-
-	}
-
- 	private DataOCRFile getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
-			int totalPaginas) throws Exception {
-
- 		StringBuffer textoCompleto = new StringBuffer();
-		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
-		list.add(RenderedFormat.PDF);
-
-		File[] files = new File[totalPaginas];
-
-		int resolucion = 300;
-		
-		for (int page = 0; page < totalPaginas; page++) {
-
-			//Se obtiene la resolucion de la imagen
-			BufferedImage bim = pdfRenderer.renderImageWithDPI(page, 300, ImageType.RGB);
-			String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + page;
-			
-			File temp = File.createTempFile(nombreImagen, ".tif"); 
-			ImageIO.write(bim, "tif", temp);
-			
-			int resolucionImagenActual =  getResolucionImagen(temp.getAbsolutePath());
-			
-			if (page == 0) {
-				
-				if (resolucionImagenActual >= 200 && resolucionImagenActual <=300)
-					
-					resolucion = 400;
-				
-			} else {
-			
-				if (resolucion == 300 && (resolucionImagenActual >= 200 && resolucionImagenActual <=300))
-					
-					resolucion = 400;
-				
-				else if (resolucion == 400 && (resolucionImagenActual >= 300 && resolucionImagenActual <=400))
-					
-					resolucion = 300;
-				
-				else if (resolucion < 200 && resolucionImagenActual < 200)
-					
-					resolucion = resolucionImagenActual;
-				
-				
-			}
-			
-			if (resolucion != 300) {
-				
-				bim = pdfRenderer.renderImageWithDPI(page, resolucion, ImageType.RGB);
-				temp = File.createTempFile(nombreImagen, ".tif"); 
-				ImageIO.write(bim, "tif", temp);
-				
-			}
-			
-			
-			String path = "recursos/temp/" + nombreImagen;
-		    tesseract.createDocuments(temp.getAbsolutePath(), path , list);
-		    textoCompleto.append(tesseract.doOCR(temp));
-		    
-			File file = new File(path + ".pdf");
-			files[page] = file;
-
-		}
-
-		File fileOutputPDF = new File("mergePdf.pdf");//File.createTempFile("mergePdf", "pdf");
-
-		PdfUtilities.mergePdf(files, fileOutputPDF);
-		
-		return new DataOCRFile(fileOutputPDF, textoCompleto.toString());
-
-	}
-	
 	public String[] getPalabrasCorregirEspañol() {
-		
+
 		String[] palabrasCorregir = {"responsabilidad","cuenta","actualizacion","tipo","informacion","fecha",
-                "pagado","prestamo","alto","pago","estado","apertura","nombres","transunion",
-                "adversas","satisfactorias","numero","domicilios","domicilio","recibido",
-                 "cierre","observaciones","saldo","excedente","credito","limite","conjunta"};
-		
+				"pagado","prestamo","alto","pago","estado","apertura","nombres","transunion",
+				"adversas","satisfactorias","numero","domicilios","domicilio","recibido",
+				"cierre","observaciones","saldo","excedente","credito","limite","conjunta"};
+
 		return palabrasCorregir;
 	}
-	
+
 	public String[] getPalabrasCorregirIngles() {
-		
+
 		String[] palabrasCorregir = {"address","date","inquiry","number","partial","recentbalance",
 				"status","individual","account","identification","responsibility","limit",
 				"opened","open","dept","payment","account","monthly","high","balance","year",
 				"payment","information","first","toyota","equifax","transunion","experian","security",
-				"credit","phone","original","creditor","reported","comment","terms","dispute","items",
+				"credit","phone","original","reported","comment","terms","dispute","items",
 				"history","identification","original","before","after","address id","address",
 				"current","previous","dear","file","formerly","finalballoon","bankruptcies",
-				"judgments","liens"};
+				"judgments","liens","inquiry","company","social","security","recent",
+				"responsibility","status","amount"};
 
 		return palabrasCorregir;
-		
+
 	}
-	
+
 	public String getValor(String[] array,int posicion) {
 
 		return posicion < array.length ? array[posicion].replaceAll("\r", "").replaceAll("\n", " ") : "";		
@@ -893,13 +728,11 @@ public class Utilidades {
 
 		//Se remplanzan las tildes en caso de los texto en español
 		texto = texto.toLowerCase().replaceAll("á", "a").replaceAll("é", "e").replaceAll("í", "i").
-				replaceAll("ó", "o").replaceAll("ú", "u").replaceAll("identilication","identification").
-				replaceAll("idenlificalion","identification").replaceAll("cuentaversas","cuentas adversas").
-				replaceAll("repod","report").replaceAll(":","").replaceAll("\\(","").replaceAll("\\)","").
-				replaceAll("lnfonnada", "informada").replaceAll("\\*","_").replaceAll("\\{","").replaceAll("\\[", "").
-				replaceAll("__", "  ").replaceAll("recentbalance", "recent balance").
-				replaceAll("addressidentification", "address identification").replaceAll("cuentadividual", "cuenta individual").
-				replaceAll("cuentaplazos","cuenta plazos").replaceAll("\\\\", "").replaceAll("[|]", "").replaceAll("año", "alto");
+				replaceAll("ó", "o").replaceAll("ú", "u").replaceAll(":","").replaceAll("\\(","").replaceAll("\\)","").
+				replaceAll("\\*","_").replaceAll("\\{","").replaceAll("\\[", "").
+				replaceAll("__", "  ").replaceAll("\\\\", "").replaceAll("[|]", "").
+				replaceAll("trans union", "transunion").
+				replaceAll("expenan","experian");
 
 
 		//Se corrigen las palabras que se leen mal por el OCR
@@ -915,7 +748,7 @@ public class Utilidades {
 
 					int valor = computeLevenshteinDistance(palabra, palabraCorrecion); 
 
-					if (palabraCorrecion.length() <= 5) {
+					if (palabraCorrecion.length() <= 4 && !palabra.equals("data")) {
 
 						if ( valor == 1 ) 
 
@@ -933,13 +766,334 @@ public class Utilidades {
 			}
 		}	
 
-
-		texto = texto.replaceAll("( ){2,}", " ");
-
 		return texto;
 	}
 
+	private Integer[] getDatosResolucionTotacionImagen(String ruta) {
+		
+		Integer[] datosImagen = new Integer[]{300,0}; 
 
+		try {
+
+			
+			Process process = Runtime.getRuntime().exec("cmd /c  tesseract  --psm 0 " +ruta + " stdout");
+
+			BufferedReader bufferedReaderInputStream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+
+			BufferedReader bufferedReadeErrorStream = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+			
+			String linea = null;
+			StringBuffer buffer = new StringBuffer();
+
+
+			while ((linea = bufferedReaderInputStream.readLine()) != null)  
+				buffer.append(linea).append("\n");
+			
+			while ((linea = bufferedReadeErrorStream.readLine()) != null)  
+				buffer.append(linea).append("\n");
+
+
+			process.waitFor();
+			
+			bufferedReadeErrorStream.close();
+			bufferedReaderInputStream.close();
+
+			String resultado = buffer.toString().toLowerCase();
+			
+			System.out.println(resultado);
+			
+			if (!resultado.isBlank()) {
+				
+				String datoResolucion = getDatoHorizontal(resultado, "resolution as");
+
+				String rotateImagen = getDatoHorizontal(resultado, "rotate");
+				
+				String degrees = getDatoHorizontal(resultado, "degrees");
+				
+				if (!rotateImagen.isBlank()) { //Si no esta en blanco estuvo bien la lectura de la imagen
+					
+					datosImagen[0] = datoResolucion.isBlank() ? 0 : Integer.parseInt(datoResolucion);
+					datosImagen[1] = degrees.equals("270") && rotateImagen.equals("90") ? 270 :Integer.parseInt(rotateImagen);
+					
+				} else { //Si esta en blanco se pudo debe a un problema de la posicion de la imagen
+					
+					System.out.println(resultado);
+					
+					if (numeroMaximaRotaciones <= 2) { //Se rotan maximo dos veces para encontrar la rotacion
+					
+						rotarArchivo(new File(ruta),90,true);
+						numeroMaximaRotaciones++;
+						return getDatosResolucionTotacionImagen(ruta); //Se realiza una llamada recursiva
+						
+					}
+					
+					
+				}
+
+			}
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+		}
+
+		
+		return datosImagen;
+
+
+	}
+
+	public String getIdiomaTexto(String texto) {
+
+		String resultado = "en"; 
+
+		try {
+
+			LanguageDetector detector = new OptimaizeLangDetector().loadModels();
+			LanguageResult result = detector.detect(texto);
+			resultado = result.getLanguage();
+
+		} catch (Exception e) {}
+
+
+		return resultado;
+
+	}
+
+	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile,long numeroSecuencia) {
+
+		DataOCRFile dataOCRFile = null;
+		String idioma = "";
+
+		try {
+
+			PDFRenderer pdfRenderer = new PDFRenderer(document);
+			Tesseract tesseract = new Tesseract();
+			tesseract.setPageSegMode(1);
+			tesseract.setDatapath("recursos/tessdata");
+			tesseract.setTessVariable("preserve_interword_spaces", "1");
+			tesseract.setLanguage("eng"); //Se escoge inicialmente lenguaje ingles pero se revisara si este es
+			
+			idioma  = getIdiomaTexto(getTextoImagen(pdfRenderer,tesseract,nombreArchivo,0));
+
+			if (idioma.equalsIgnoreCase("es")) 
+
+				tesseract.setLanguage("spa"); 
+
+			else 
+				tesseract.setLanguage("eng");
+
+			dataOCRFile = getPDFAndTextImages(pdfRenderer,tesseract,document.getNumberOfPages(),idioma,numeroSecuencia);
+			dataOCRFile.setIdioma(idioma);
+
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+		} 
+
+
+		return dataOCRFile;
+
+	}
+
+	private String getTextoImagen(PDFRenderer pdfRenderer,Tesseract tesseract,String nombreArchivo,
+			int numeroPagina) 
+					throws IOException, TesseractException {
+
+
+		BufferedImage bim = pdfRenderer.renderImageWithDPI(numeroPagina, 300, ImageType.RGB);
+
+		String nombreImagen = nombreArchivo.replaceAll(".pdf", "") + numeroPagina;
+
+		File temp = File.createTempFile(nombreImagen, ".tif"); 
+		ImageIO.write(bim, "tif", temp);
+
+		String result = tesseract.doOCR(temp);
+
+		return result;
+
+	}
+
+	private DataOCRFile getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,
+			int totalPaginas,String idioma, long numeroSecuencia) throws Exception {
+		
+		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
+		list.add(RenderedFormat.PDF);
+
+		String nombreArchivo = "" + numeroSecuencia;
+		
+		//Se crea una carpeta temporal
+		File carpetaTemporal = new File("temp");//File.createTempFile("temp", "");
+		carpetaTemporal.deleteOnExit();
+		
+		File[] files = new File[totalPaginas];
+
+		int resolucion = 300;
+
+		for (int page = 0; page < totalPaginas; page++) {
+
+			//Se obtiene la resolucion de la imagen
+			String nombreImagen = nombreArchivo + numeroSecuencia + page;
+			String nombreArchivoGenerado = procesarImagenes(pdfRenderer,300,page,nombreImagen);
+			
+			File tempLimpiando = new File(nombreArchivoGenerado);
+
+			//********************** se obtiene la resolución de la imagen *****************************************
+			
+			Integer[] datosImagen = getDatosResolucionTotacionImagen(nombreArchivoGenerado);
+			
+			int resolucionImagenActual =  datosImagen[0];
+			int rotacionImagenActual  =  datosImagen[1];
+
+			if (page == 0) {
+
+				if (resolucionImagenActual >= 200 && resolucionImagenActual <=300)
+
+					resolucion = 440;
+
+			} else {
+
+				if (resolucion == 300 && (resolucionImagenActual >= 200 && resolucionImagenActual <=300))
+
+					resolucion = 440;
+
+				else if (resolucion == 440 && (resolucionImagenActual >= 300 && resolucionImagenActual <=400))
+
+					resolucion = 300;
+
+				else if (resolucion < 200 && resolucionImagenActual < 200)
+
+					resolucion = resolucionImagenActual;
+
+
+			}
+
+			
+
+			//************************************ Se convierte si es necesario ***********************************************
+			/*if (resolucion != 300) {
+				
+				nombreArchivoGenerado = procesarImagenes(pdfRenderer,300,page,nombreImagen);
+				tempLimpiando = new File(nombreArchivoGenerado);
+
+
+			}*/
+
+			
+			if (rotacionImagenActual != 0) 
+				
+				rotarArchivo(tempLimpiando,rotacionImagenActual,true);
+			
+
+			//Se obtiene la imagen limpiada
+			String path =  "recursos/archivos/temp/" + nombreImagen;
+			tesseract.createDocuments(tempLimpiando.getAbsolutePath(), path , list);
+			
+
+			File file = new File(path + ".pdf");
+			file.deleteOnExit();
+			files[page] = file;
+			
+			numeroMaximaRotaciones = 1;
+			
+
+		}
+
+		File fileOutputPDF = new File(nombreArchivo + numeroSecuencia + ".pdf");//File.createTempFile(nombreArchivo + numeroSecuencia, "pdf");//
+		fileOutputPDF.deleteOnExit();
+
+		PdfUtilities.mergePdf(files, fileOutputPDF);
+
+		return new DataOCRFile(fileOutputPDF);
+
+	}
+	
+	private String procesarImagenes(PDFRenderer pdfRenderer, int resolucion, int page,String nombreImagen) throws Exception {
+		
+		BufferedImage bim = pdfRenderer.renderImageWithDPI(page, resolucion, ImageType.RGB);
+		
+		File temp = new File(nombreImagen+".tif");//File.createTempFile(nombreImagen, ".tif"); 
+		ImageIO.write(bim, "tif", temp);
+
+		limpiarImagen(temp.getAbsolutePath(),"recursos/archivos/temp/");// +"//carpetaTemporal.getAbsolutePath());
+
+		return "recursos/archivos/temp/"+ temp.getName();
+	}
+
+	public void limpiarImagen(String ruta,String rutaDestino) throws Exception {
+
+		
+		Process process = Runtime.getRuntime().exec("cmd /c scantailor-cli.exe --start-filter=1 --end_filter=6 --dpi=300 --color-mode=mixed " + ruta + " "+  rutaDestino );
+		process.waitFor();
+
+	
+
+	}
+	
+	public static BufferedImage rotateImagen(BufferedImage img, double angle) {
+
+		double rads = Math.toRadians(angle);
+		double sin = Math.abs(Math.sin(rads)), cos = Math.abs(Math.cos(rads));
+		int w = img.getWidth();
+		int h = img.getHeight();
+		int newWidth = (int) Math.floor(w * cos + h * sin);
+		int newHeight = (int) Math.floor(h * cos + w * sin);
+
+		BufferedImage rotated = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D g2d = rotated.createGraphics();
+		AffineTransform at = new AffineTransform();
+		at.translate((newWidth - w) / 2, (newHeight - h) / 2);
+
+		int x = w / 2;
+		int y = h / 2;
+
+		at.rotate(rads, x, y);
+		g2d.setTransform(at);
+		g2d.drawImage(img, 0, 0,null);
+		g2d.setColor(Color.RED);
+		g2d.drawRect(0, 0, newWidth - 1, newHeight - 1);
+		g2d.dispose();
+
+		return rotated;
+	}
+	
+	public void rotarArchivo(File imagenArchivo, int rotacion, boolean sinCambiarTamaño) throws Exception {
+		
+		if (sinCambiarTamaño) {
+			
+			Process process = Runtime.getRuntime().exec("cmd /c  scantailor-cli  -rotate=" +rotacion + " " + imagenArchivo.getAbsolutePath());
+			process.waitFor();
+			
+		} else {	
+			
+			System.out.println("Imagen archivo rota" + imagenArchivo.getAbsolutePath());
+			BufferedImage bufferedImage = ImageIO.read(imagenArchivo);
+			
+			BufferedImage bufferedImageRotada = rotateImagen(bufferedImage, rotacion);
+			ImageIO.write(bufferedImageRotada, "tif", imagenArchivo);
+		}
+		
+		
+	}
+
+	public float getTamañoLetraDocumento(PDDocument document) throws IOException {
+		
+		PosicionTextoPDF posicionTextoPDF = new PosicionTextoPDF(document, 1, 1);
+
+		return posicionTextoPDF.getTamañoLetra();
+	}
+	
+	public String getTextoRecortadoFormateada(PDDocument document,int posicionInicial, int ancho,String idioma) throws IOException {
+		
+		String texto = getColumnaPDF(document, posicionInicial, ancho);
+		
+		texto = eliminarMasDeDosEspaciosEnTexto(
+				getFormatearTexto(texto, idioma.equals("en") ? getPalabrasCorregirIngles() : getPalabrasCorregirEspañol()));
+		
+		return texto;
+	}
 
 	//******************** Este codigo fue tomado de internet *********************************************
 
@@ -976,7 +1130,36 @@ public class Utilidades {
 
 	//************************************************************************************************************************************
 
+	public boolean deleteDirectory(File directoryToBeDeleted) {
 
+		File[] allContents = directoryToBeDeleted.listFiles();
+		if (allContents != null) {
+			for (File file : allContents) {
+				deleteDirectory(file);
+			}
+		}
+		return directoryToBeDeleted.delete();
+	}
+	
+	//******************************************** Metodos JSON ************************************************
+	public JSONObject getJSONObjectOrdenNatural() {
+
+		JSONObject json = new JSONObject();
+
+		try {
+
+			Field changeMap = json.getClass().getDeclaredField("map");
+			changeMap.setAccessible(true);
+			changeMap.set(json, new LinkedHashMap<>());
+			changeMap.setAccessible(false);
+
+		} catch (Exception e) {}
+
+		return json;
+
+	}
+	
+	
 
 	//**************************************************** class DataOCRFile ***************************************************************
 
@@ -984,14 +1167,12 @@ public class Utilidades {
 
 		private File file;
 		private String idioma;
-		private String texto;
 
 
-		public DataOCRFile(File file,String texto) {
+		public DataOCRFile(File file) {
 
 			this.file = file;
-			this.texto = texto;
-
+			
 		}
 
 		public void setIdioma(String idioma) {
@@ -1006,10 +1187,6 @@ public class Utilidades {
 		public String getIdioma() {
 			return idioma;
 		}
-
 		
-		public String getTexto() {
-			return texto;
-		}
 	}
 }
