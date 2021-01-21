@@ -19,6 +19,8 @@ public class Reporte {
 	private String  name = "";
 	private String cra = "";
 	private String[] employeer = null;
+	private String[] names;
+	private String[] phones;
 	private String opencreditcards = "";
 	private String openretailcards = "";
 	private String openrealrstateloans = "";
@@ -319,7 +321,25 @@ public class Reporte {
 	public void setCreditFileStatus(String creditFileStatus) {
 		this.creditFileStatus = creditFileStatus;
 	}
-	
-	
 
+
+	public String[] getNames() {
+		return names;
+	}
+
+
+	public void setNames(String[] names) {
+		this.names = names;
+	}
+
+
+	public String[] getPhones() {
+		return phones;
+	}
+
+
+	public void setPhones(String[] phones) {
+		this.phones = phones;
+	}
+	
 }

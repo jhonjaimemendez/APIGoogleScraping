@@ -12,7 +12,6 @@
 
 package com.legalCredit.componentes;
 
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
@@ -20,21 +19,28 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.rendering.ImageType;
@@ -64,9 +70,13 @@ public class Utilidades {
 	private static DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm");
 	private static Pattern patronNumeroEntero;
 	private static Pattern patronNumeroReal;
+	private SimpleDateFormat formato;
 
 	private String[] meses = {"jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"};
+	private String rutaTemporal = "recursos/archivos/temp/";
+	private String regexFecha = "\\d{2}/\\d{2}/\\d{4}";
 	
+
 	private int numeroMaximaRotaciones;
 	/**
 	 * Cuenta el numero de ocurrencias de una palabra
@@ -236,6 +246,21 @@ public class Utilidades {
 
 	}
 
+	public String getTextoEntreTag(String texto,String tag1, String tag2) {
+
+		String resultado = "";
+
+		int posicionInicial = texto.indexOf(tag1);
+		int posicionFinal = texto.indexOf(tag2,posicionInicial);
+
+
+		if (posicionInicial > 0 && posicionInicial < posicionFinal) 
+			resultado = eliminarFilasVacias(texto.substring(posicionInicial, posicionFinal).replaceAll(tag1, ""));
+
+		return resultado;
+
+	}
+
 	public String getColumnaPDF(PDDocument document, int posicionInicial, int posicionFinal) throws IOException {
 
 		StringBuffer columna = new StringBuffer();
@@ -351,10 +376,25 @@ public class Utilidades {
 
 	}
 
-	public String eliminarRetornosCarro(String texto) {
+	/**
+	 * Permite convertir un String en fecha (Date).
+	 * @param fecha Cadena de fecha dd/MM/yyyy
+	 * @return Objeto Date
+	 */
+	public Date convertirFecha(String fecha) {
 
-		return texto.replaceAll("\n|\r", " ").trim();
+		if (formato == null)
+			formato = new SimpleDateFormat("MM/dd/yyyy");
 
+		Date fechaDate = null;
+
+		try {
+			fechaDate = formato.parse(fecha);
+		} catch (ParseException ex) {
+			ex.printStackTrace();
+		}
+
+		return fechaDate;
 	}
 
 	public String getCadenaRecortada(String textoMinuscula,String tag) {
@@ -464,12 +504,10 @@ public class Utilidades {
 		String[] filas = texto.replace("\r","").split("\n");
 		StringBuffer filasSalidas = new StringBuffer();
 
-		for (String fila : filas) {
+		for (String fila : filas) 
 
-			if (!fila.isEmpty() && !fila.replace(" ", "").replace("\r", "").replace("\n", "").isEmpty())
+			if (!fila.replaceAll("\r|\n|( )", "").replaceAll(" ","").isBlank())
 				filasSalidas.append(fila).append("\n");
-
-		}
 
 		return filasSalidas.toString();
 
@@ -609,6 +647,15 @@ public class Utilidades {
 		return patronSoftInquiries;
 	}
 
+	public Pattern getPatronNumeroTelefono() {
+
+		String regexNumeroTelefono = "\\d{3} \\d{3} \\d{4}";
+
+		Pattern patronNumeroTelefono = Pattern.compile(regexNumeroTelefono,Pattern.CASE_INSENSITIVE);
+
+		return patronNumeroTelefono;
+	}
+
 	public Pattern getPatronDateInquiresOn() {
 
 		String regexDateInquiresOn ="\\d{1,2}/\\d{1,2}/\\d{2,4}";
@@ -617,6 +664,16 @@ public class Utilidades {
 
 		return patronDateInquiresOn;
 	}
+	
+	public Pattern getPatronPhones() {
+
+		String regexPhone = "\\(\\d{3}\\)\\s*\\d{3}-\\d{4}";
+
+		Pattern patronPhones = Pattern.compile(regexPhone,Pattern.CASE_INSENSITIVE);
+
+		return patronPhones;
+	}
+
 
 	public Pattern getPatronNumeroCuentaReporte() {
 
@@ -689,7 +746,6 @@ public class Utilidades {
 		return numero;
 	}
 
-
 	public String[] getPalabrasCorregirEspañol() {
 
 		String[] palabrasCorregir = {"responsabilidad","cuenta","actualizacion","tipo","informacion","fecha",
@@ -722,7 +778,67 @@ public class Utilidades {
 
 	}
 
+	public List<String> getTextoPorTag(String texto, String tag, int posicionInicialBusqueda) {
 
+		int posicionInicial = posicionInicialBusqueda < 0 ? 0 : posicionInicialBusqueda;
+		List<String> textos = new ArrayList<String>();
+
+		do {
+
+			posicionInicial = texto.indexOf(tag,posicionInicial);
+
+			if (posicionInicial > 0) {
+
+				int posicionFinal = texto.indexOf(tag,posicionInicial+10);
+
+				if (posicionFinal < 0)
+
+					posicionFinal = texto.length();
+
+				textos.add(texto.substring(posicionInicial, posicionFinal));
+
+				posicionInicial = posicionFinal;
+
+			}
+
+		} while (posicionInicial > 0);
+
+		return textos;
+	}
+
+	public String eliminarRetornosCarro(String texto) {
+
+		return texto.replaceAll("\n|\r", " ").trim();
+
+	}
+
+	public String eliminarURLsTexto(String texto) {
+
+		String regex = "((http|https)://)(www.)?"
+				+ "[a-zA-Z0-9@:%._\\+~#?&//=]"
+				+ "{2,256}\\.[a-z]"
+				+ "{2,6}\\b([-a-zA-Z0-9@:%"
+				+ "._\\+~#?&//=]*)";
+
+		Set<String> urls = new HashSet<String>();
+		Matcher matcher = Pattern.compile(regex).matcher(texto);
+
+		while (matcher.find()) 
+			
+			urls.add(matcher.group());
+			
+		for (String url : urls) 
+			texto = texto.replaceAll(url.replaceAll("\\#", "\\\\\\#").
+					                     replaceAll("\\?", "\\\\\\?").
+					                     replaceAll("\\&", "\\\\\\&"), "");
+		
+		
+		return texto;
+
+	}
+
+	
+	
 	//******************************************* Utilidades para el OCR ***********************************
 	public String getFormatearTexto(String texto, String[] palabrasCorregir) {
 
@@ -770,64 +886,60 @@ public class Utilidades {
 	}
 
 	private Integer[] getDatosResolucionTotacionImagen(String ruta) {
-		
+
 		Integer[] datosImagen = new Integer[]{300,0}; 
 
 		try {
 
-			
+
 			Process process = Runtime.getRuntime().exec("cmd /c  tesseract  --psm 0 " +ruta + " stdout");
 
 			BufferedReader bufferedReaderInputStream = new BufferedReader(new InputStreamReader(process.getInputStream()));
 
 			BufferedReader bufferedReadeErrorStream = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-			
+
 			String linea = null;
 			StringBuffer buffer = new StringBuffer();
 
 
 			while ((linea = bufferedReaderInputStream.readLine()) != null)  
 				buffer.append(linea).append("\n");
-			
+
 			while ((linea = bufferedReadeErrorStream.readLine()) != null)  
 				buffer.append(linea).append("\n");
 
 
 			process.waitFor();
-			
+
 			bufferedReadeErrorStream.close();
 			bufferedReaderInputStream.close();
 
 			String resultado = buffer.toString().toLowerCase();
-			
-			System.out.println(resultado);
-			
+
 			if (!resultado.isBlank()) {
-				
+
 				String datoResolucion = getDatoHorizontal(resultado, "resolution as");
 
 				String rotateImagen = getDatoHorizontal(resultado, "rotate");
-				
+
 				String degrees = getDatoHorizontal(resultado, "degrees");
-				
+
 				if (!rotateImagen.isBlank()) { //Si no esta en blanco estuvo bien la lectura de la imagen
-					
+
 					datosImagen[0] = datoResolucion.isBlank() ? 0 : Integer.parseInt(datoResolucion);
 					datosImagen[1] = degrees.equals("270") && rotateImagen.equals("90") ? 270 :Integer.parseInt(rotateImagen);
-					
+
 				} else { //Si esta en blanco se pudo debe a un problema de la posicion de la imagen
-					
-					System.out.println(resultado);
-					
+
 					if (numeroMaximaRotaciones <= 2) { //Se rotan maximo dos veces para encontrar la rotacion
-					
+
 						rotarArchivo(new File(ruta),90,true);
 						numeroMaximaRotaciones++;
 						return getDatosResolucionTotacionImagen(ruta); //Se realiza una llamada recursiva
-						
+
 					}
-					
-					
+
+
 				}
 
 			}
@@ -838,7 +950,7 @@ public class Utilidades {
 
 		}
 
-		
+
 		return datosImagen;
 
 
@@ -861,7 +973,7 @@ public class Utilidades {
 
 	}
 
-	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile,long numeroSecuencia) {
+	public DataOCRFile extraerTextoOCR(PDDocument document, String nombreArchivo, File tmpFile) {
 
 		DataOCRFile dataOCRFile = null;
 		String idioma = "";
@@ -874,7 +986,7 @@ public class Utilidades {
 			tesseract.setDatapath("recursos/tessdata");
 			tesseract.setTessVariable("preserve_interword_spaces", "1");
 			tesseract.setLanguage("eng"); //Se escoge inicialmente lenguaje ingles pero se revisara si este es
-			
+
 			idioma  = getIdiomaTexto(getTextoImagen(pdfRenderer,tesseract,nombreArchivo,0));
 
 			if (idioma.equalsIgnoreCase("es")) 
@@ -884,7 +996,7 @@ public class Utilidades {
 			else 
 				tesseract.setLanguage("eng");
 
-			dataOCRFile = getPDFAndTextImages(pdfRenderer,tesseract,document.getNumberOfPages(),idioma,numeroSecuencia);
+			dataOCRFile = getPDFAndTextImages(pdfRenderer,tesseract,document.getNumberOfPages(),idioma,nombreArchivo);
 			dataOCRFile.setIdioma(idioma);
 
 
@@ -917,17 +1029,14 @@ public class Utilidades {
 	}
 
 	private DataOCRFile getPDFAndTextImages(PDFRenderer pdfRenderer,Tesseract tesseract,
-			int totalPaginas,String idioma, long numeroSecuencia) throws Exception {
-		
+			int totalPaginas,String idioma, String nombreArchivo) throws Exception {
+
 		List<RenderedFormat> list = new ArrayList<RenderedFormat>();
 		list.add(RenderedFormat.PDF);
+		
+		StringBuffer textoArchivo = new StringBuffer();
 
-		String nombreArchivo = "" + numeroSecuencia;
-		
 		//Se crea una carpeta temporal
-		File carpetaTemporal = new File("temp");//File.createTempFile("temp", "");
-		carpetaTemporal.deleteOnExit();
-		
 		File[] files = new File[totalPaginas];
 
 		int resolucion = 300;
@@ -935,15 +1044,19 @@ public class Utilidades {
 		for (int page = 0; page < totalPaginas; page++) {
 
 			//Se obtiene la resolucion de la imagen
-			String nombreImagen = nombreArchivo + numeroSecuencia + page;
-			String nombreArchivoGenerado = procesarImagenes(pdfRenderer,300,page,nombreImagen);
-			
+			String nombreImagen = nombreArchivo  + page;
+			File tempImagenGenerada = procesarImagenes(pdfRenderer,300,page,nombreImagen);
+
+			limpiarImagen(tempImagenGenerada.getAbsolutePath(),rutaTemporal);
+
+			String nombreArchivoGenerado = rutaTemporal + tempImagenGenerada.getName();
+
 			File tempLimpiando = new File(nombreArchivoGenerado);
 
 			//********************** se obtiene la resolución de la imagen *****************************************
-			
+
 			Integer[] datosImagen = getDatosResolucionTotacionImagen(nombreArchivoGenerado);
-			
+
 			int resolucionImagenActual =  datosImagen[0];
 			int rotacionImagenActual  =  datosImagen[1];
 
@@ -970,68 +1083,71 @@ public class Utilidades {
 
 			}
 
-			
+
 
 			//************************************ Se convierte si es necesario ***********************************************
 			/*if (resolucion != 300) {
-				
+
 				nombreArchivoGenerado = procesarImagenes(pdfRenderer,300,page,nombreImagen);
 				tempLimpiando = new File(nombreArchivoGenerado);
 
 
 			}*/
 
-			
+
 			if (rotacionImagenActual != 0) 
-				
-				rotarArchivo(tempLimpiando,rotacionImagenActual,true);
-			
+
+				rotarArchivo(tempLimpiando,rotacionImagenActual,false);
+
 
 			//Se obtiene la imagen limpiada
-			String path =  "recursos/archivos/temp/" + nombreImagen;
-			tesseract.createDocuments(tempLimpiando.getAbsolutePath(), path , list);
-			
+			String pathImageOutput =  rutaTemporal + nombreImagen;
+			tesseract.createDocuments(tempLimpiando.getAbsolutePath(), pathImageOutput , list);
+			textoArchivo.append(tesseract.doOCR(tempImagenGenerada));
 
-			File file = new File(path + ".pdf");
-			file.deleteOnExit();
+			File file = new File(pathImageOutput + ".pdf");
 			files[page] = file;
-			
+
 			numeroMaximaRotaciones = 1;
-			
+
 
 		}
 
-		File fileOutputPDF = new File(nombreArchivo + numeroSecuencia + ".pdf");//File.createTempFile(nombreArchivo + numeroSecuencia, "pdf");//
+		File fileOutputPDF = new File(nombreArchivo + ".pdf");
 		fileOutputPDF.deleteOnExit();
-
 		PdfUtilities.mergePdf(files, fileOutputPDF);
 
-		return new DataOCRFile(fileOutputPDF);
+		FileUtils.cleanDirectory(new File(rutaTemporal)); 
+
+		return new DataOCRFile(fileOutputPDF,textoArchivo.toString());
 
 	}
-	
-	private String procesarImagenes(PDFRenderer pdfRenderer, int resolucion, int page,String nombreImagen) throws Exception {
-		
+
+	private File procesarImagenes(PDFRenderer pdfRenderer, int resolucion, int page,String nombreImagen) throws IOException {
+
 		BufferedImage bim = pdfRenderer.renderImageWithDPI(page, resolucion, ImageType.RGB);
-		
-		File temp = new File(nombreImagen+".tif");//File.createTempFile(nombreImagen, ".tif"); 
+
+		File temp = new File(nombreImagen + ".tif");
 		ImageIO.write(bim, "tif", temp);
 
-		limpiarImagen(temp.getAbsolutePath(),"recursos/archivos/temp/");// +"//carpetaTemporal.getAbsolutePath());
-
-		return "recursos/archivos/temp/"+ temp.getName();
+		return temp;
 	}
 
-	public void limpiarImagen(String ruta,String rutaDestino) throws Exception {
+	public void limpiarImagen(String ruta,String rutaDestino) {
 
-		
-		Process process = Runtime.getRuntime().exec("cmd /c scantailor-cli.exe --start-filter=1 --end_filter=6 --dpi=300 --color-mode=mixed " + ruta + " "+  rutaDestino );
-		process.waitFor();
+		try {
 
-	
+			Process process = Runtime.getRuntime().exec("cmd /c scantailor-cli.exe --start-filter=1 --end_filter=6 --dpi=300 --color-mode=black_and_white " + ruta + " "+  rutaDestino );
+			process.waitFor();
+
+		} catch (Exception e) {
+
+			e.printStackTrace();
+
+		}
 
 	}
-	
+
 	public static BufferedImage rotateImagen(BufferedImage img, double angle) {
 
 		double rads = Math.toRadians(angle);
@@ -1058,40 +1174,40 @@ public class Utilidades {
 
 		return rotated;
 	}
-	
+
 	public void rotarArchivo(File imagenArchivo, int rotacion, boolean sinCambiarTamaño) throws Exception {
-		
+
 		if (sinCambiarTamaño) {
-			
+
 			Process process = Runtime.getRuntime().exec("cmd /c  scantailor-cli  -rotate=" +rotacion + " " + imagenArchivo.getAbsolutePath());
 			process.waitFor();
-			
+
 		} else {	
-			
+
 			System.out.println("Imagen archivo rota" + imagenArchivo.getAbsolutePath());
 			BufferedImage bufferedImage = ImageIO.read(imagenArchivo);
-			
+
 			BufferedImage bufferedImageRotada = rotateImagen(bufferedImage, rotacion);
 			ImageIO.write(bufferedImageRotada, "tif", imagenArchivo);
 		}
-		
-		
+
+
 	}
 
 	public float getTamañoLetraDocumento(PDDocument document) throws IOException {
-		
+
 		PosicionTextoPDF posicionTextoPDF = new PosicionTextoPDF(document, 1, 1);
 
 		return posicionTextoPDF.getTamañoLetra();
 	}
-	
+
 	public String getTextoRecortadoFormateada(PDDocument document,int posicionInicial, int ancho,String idioma) throws IOException {
-		
+
 		String texto = getColumnaPDF(document, posicionInicial, ancho);
-		
+
 		texto = eliminarMasDeDosEspaciosEnTexto(
 				getFormatearTexto(texto, idioma.equals("en") ? getPalabrasCorregirIngles() : getPalabrasCorregirEspañol()));
-		
+
 		return texto;
 	}
 
@@ -1128,8 +1244,6 @@ public class Utilidades {
 
 	}
 
-	//************************************************************************************************************************************
-
 	public boolean deleteDirectory(File directoryToBeDeleted) {
 
 		File[] allContents = directoryToBeDeleted.listFiles();
@@ -1140,7 +1254,7 @@ public class Utilidades {
 		}
 		return directoryToBeDeleted.delete();
 	}
-	
+
 	//******************************************** Metodos JSON ************************************************
 	public JSONObject getJSONObjectOrdenNatural() {
 
@@ -1158,8 +1272,29 @@ public class Utilidades {
 		return json;
 
 	}
-	
-	
+
+	public void createFile(String nombreArchivo,String JSON) {
+
+		FileWriter file;
+		try {
+
+			file = new FileWriter(rutaTemporal+nombreArchivo);
+			file.write(JSON);
+			file.flush();
+			file.close();
+
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		} 
+
+
+	}
+
+	public String getRegexFecha() {
+		return regexFecha;
+	}
+
 
 	//**************************************************** class DataOCRFile ***************************************************************
 
@@ -1167,12 +1302,18 @@ public class Utilidades {
 
 		private File file;
 		private String idioma;
+		private String texto;
 
 
-		public DataOCRFile(File file) {
+		public DataOCRFile(File file,String texto) {
 
 			this.file = file;
-			
+			this.texto = texto;
+
+		}
+
+		public void setTexto(String texto) {
+			this.texto = texto;
 		}
 
 		public void setIdioma(String idioma) {
@@ -1183,10 +1324,13 @@ public class Utilidades {
 			return file;
 		}
 
+		public String getTexto() {
+			return texto;
+		}
 
 		public String getIdioma() {
 			return idioma;
 		}
-		
+
 	}
 }
